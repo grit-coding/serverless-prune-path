@@ -8,7 +8,7 @@ describe('ServerlessPruneNodeModulesPath', () => {
         //Restore the real file system after each test.
         mockFs.restore();
     });
-    describe('deleteListedFiles', () => {
+    describe('deleteListedFiles()', () => {
         it('should not remove anything from servicePath when no path is given', () => {
             mockFs({
                 '/servicePath': {
@@ -126,7 +126,7 @@ describe('ServerlessPruneNodeModulesPath', () => {
         });
     });
 
-    describe('deleteUnlistedFiles', () => {
+    describe('deleteUnlistedFiles()', () => {
         it('should keep all the servicePath when no path is given', () => {
             mockFs({
                 '/servicePath': {
@@ -357,7 +357,7 @@ describe('ServerlessPruneNodeModulesPath', () => {
         });
     });
 
-    describe('preprocessBeforeDeployment', () => {
+    describe('preprocessBeforeDeployment()', () => {
         it('should throw an error when given contradictory paths', () => {
             mockFs({
                 '/servicePath': {
@@ -387,5 +387,50 @@ describe('ServerlessPruneNodeModulesPath', () => {
             expect(fs.existsSync(path.join('/servicePath', 'directory/nested/file2.txt'))).toBe(true);
             expect(fs.existsSync(path.join('/servicePath', 'directory/nested/file3.txt'))).toBe(true);
         });
+        it('should remove pathToDelete and should keep the specified file and remove all other unlisted files in the same directory of the given path', () => {
+            mockFs({
+                '/servicePath': {
+                    'file1.txt': 'file1 content',
+                    'node_modules': {
+                        'file2.txt': 'file2 content',
+                        'custom_library': {
+                            'file3.txt': 'file3 content',
+                            'file4.txt': 'file4 content',
+                            'file5.txt': 'file5 content'
+                        },
+                        'custom_library2': {
+                            'file6.txt': 'file6 content',
+                            'file7.txt': 'file7 content',
+                            'file8.txt': 'file8 content'
+                        }
+                    }
+                }
+            });
+
+            const plugin = new ServerlessPruneNodeModulesPath({
+                cli: { log: jest.fn() },
+                config: { servicePath: '/servicePath' },
+            });
+
+            expect(() => {
+                plugin.preprocessBeforeDeployment({
+                    pathsToKeep: ['node_modules/custom_library/file3.txt'],
+                    pathsToDelete: ['node_modules/file2.txt']
+                });
+            }).toThrow(Error);
+
+            expect(fs.existsSync(path.join('/servicePath', 'file1.txt'))).toBe(true);
+            expect(fs.existsSync(path.join('/servicePath', 'node_modules/file2.txt'))).toBe(false);
+            expect(fs.existsSync(path.join('/servicePath', 'node_modules/custom_library/file3.txt'))).toBe(true);
+            expect(fs.existsSync(path.join('/servicePath', 'node_modules/custom_library/file4.txt'))).toBe(false);
+            expect(fs.existsSync(path.join('/servicePath', 'node_modules/custom_library/file5.txt'))).toBe(false);
+            expect(fs.existsSync(path.join('/servicePath', 'node_modules/custom_library2/file6.txt'))).toBe(true);
+            expect(fs.existsSync(path.join('/servicePath', 'node_modules/custom_library2/file7.txt'))).toBe(true);
+            expect(fs.existsSync(path.join('/servicePath', 'node_modules/custom_library2/file8.txt'))).toBe(true);
+        });
+    });
+
+    describe('findContradictoryPaths()', () => {
+
     });
 });
