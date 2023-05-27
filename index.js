@@ -16,13 +16,6 @@ class ServerlessPruneNodeModulesPath {
   test() {
     this.serverless.cli.log('Running before createDeploymentArtifacts');
 
-    /**
-    pruneNodeModulesPath:
-      pathsToKeep:
-        - '.package-lock.json'
-      pathsToDelete:
-        - './node_modules/luxon/license.md'
-     */
     const customVariables = this.serverless.service.custom.pruneNodeModulesPath;
 
 
@@ -37,38 +30,38 @@ class ServerlessPruneNodeModulesPath {
   }
 
 
+
+
   deleteUnlistedFiles(pathsToKeep) {
-    // Convert file paths to keep into a set for faster lookup
     const keepFilesSet = new Set(pathsToKeep.map(filePath => path.join(this.servicePath, filePath)));
 
-    // Get unique directories from the keepFilesSet
-    const directories = [...keepFilesSet].map(file => path.dirname(file)).filter((value, index, array) => array.indexOf(value) === index);
+    let targetDirectoriesToPrune = [...keepFilesSet].map(file => path.dirname(file));
 
-    // Recursive function to go through directories
-    const processDirectory = dir => {
+    // Remove duplicate directories and sort them so that directories near the root come first.
+    targetDirectoriesToPrune = [...new Set(targetDirectoriesToPrune)].sort((a, b) => {
+      const aDepth = a.split(path.sep).length;
+      const bDepth = b.split(path.sep).length;
+      return aDepth - bDepth;
+    });
+
+    targetDirectoriesToPrune.forEach(dir => {
       fs.readdirSync(dir, { withFileTypes: true }).forEach(file => {
         const fullPath = path.join(dir, file.name);
 
-
-        if (file.isDirectory()) {
-          // If it's a directory and in the keep list, recurse into it
-          if (directories.includes(fullPath)) {
-            processDirectory(fullPath);
-          }
-        } else {
-          // If it's a file and it's not in the keep list, delete it
-          if (!keepFilesSet.has(fullPath)) {
+        if (!keepFilesSet.has(fullPath)) {
+          if (file.isDirectory()) {
+            // Recursively delete directory if it's not in the keep list.
+            fs.rmdirSync(fullPath, { recursive: true });
+            this.serverless.cli.log(`Deleted directory: ${fullPath}`);
+          } else {
+            // Delete file if it's not in the keep list.
             fs.unlinkSync(fullPath);
-            this.serverless.cli.log(`Deleted: ${fullPath}`);
+            this.serverless.cli.log(`Deleted file: ${fullPath}`);
           }
         }
       });
-    };
-
-    // Start processing from each directory in the keep list
-    directories.forEach(dir => processDirectory(dir));
+    });
   }
-
 
 
 
