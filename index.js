@@ -8,12 +8,12 @@ class ServerlessPruneNodeModulesPath {
     this.serverless = serverless;
     this.servicePath = this.serverless.config.servicePath;
     this.hooks = {
-      'before:package:createDeploymentArtifacts': this.test.bind(this)
+      'before:package:createDeploymentArtifacts': this.preprocessBeforeDeployment.bind(this)
     };
   }
 
 
-  test() {
+  preprocessBeforeDeployment() {
     this.serverless.cli.log('Running before createDeploymentArtifacts');
 
     const customVariables = this.serverless.service.custom.pruneNodeModulesPath;
@@ -35,6 +35,13 @@ class ServerlessPruneNodeModulesPath {
   deleteUnlistedFiles(pathsToKeep) {
     const keepFilesSet = new Set(pathsToKeep.map(filePath => path.join(this.servicePath, filePath)));
 
+    const invalidPath = [...keepFilesSet].find(path => fs.existsSync(path) === false);
+
+    if (invalidPath?.length) {
+      throw new Error(`File not found: ${invalidPath}`);
+    }
+
+    // check if all pathsToKeep values existing path. if not throw an error.
     let targetDirectoriesToPrune = [...keepFilesSet].map(file => path.dirname(file));
 
     // Remove duplicate directories and sort them so that directories near the root come first.

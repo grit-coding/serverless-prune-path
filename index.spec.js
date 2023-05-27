@@ -156,7 +156,7 @@ describe('ServerlessPruneNodeModulesPath', () => {
             expect(fs.existsSync(path.join('/servicePath', 'node_modules/custom_library/file5.txt'))).toBe(true);
         });
 
-        it('should remove unlisted files within the path folder1', () => {
+        it('should keep the specified file and remove all other unlisted files in the same directory of the given path', () => {
             mockFs({
                 '/servicePath': {
                     'file1.txt': 'file1 content',
@@ -185,7 +185,7 @@ describe('ServerlessPruneNodeModulesPath', () => {
             expect(fs.existsSync(path.join('/servicePath', 'node_modules/custom_library/file5.txt'))).toBe(false);
         });
 
-        it('should remove unlisted files within the path folder2', () => {
+        it('should keep the specified files and remove all other unlisted files in the same directory of the given paths', () => {
             mockFs({
                 '/servicePath': {
                     'file1.txt': 'file1 content',
@@ -214,7 +214,7 @@ describe('ServerlessPruneNodeModulesPath', () => {
             expect(fs.existsSync(path.join('/servicePath', 'node_modules/custom_library/file5.txt'))).toBe(false);
         });
 
-        it('should remove unlisted files within the path folder3', () => {
+        it('should keep the specified directory and remove all other unlisted files and directories in the same directory of the given path', () => {
             mockFs({
                 '/servicePath': {
                     'file1.txt': 'file1 content',
@@ -224,6 +224,11 @@ describe('ServerlessPruneNodeModulesPath', () => {
                             'file3.txt': 'file3 content',
                             'file4.txt': 'file4 content',
                             'file5.txt': 'file5 content'
+                        },
+                        'custom_library2': {
+                            'file6.txt': 'file6 content',
+                            'file7.txt': 'file7 content',
+                            'file8.txt': 'file8 content'
                         }
                     }
                 }
@@ -241,9 +246,13 @@ describe('ServerlessPruneNodeModulesPath', () => {
             expect(fs.existsSync(path.join('/servicePath', 'node_modules/custom_library/file3.txt'))).toBe(true);
             expect(fs.existsSync(path.join('/servicePath', 'node_modules/custom_library/file4.txt'))).toBe(true);
             expect(fs.existsSync(path.join('/servicePath', 'node_modules/custom_library/file5.txt'))).toBe(true);
+            expect(fs.existsSync(path.join('/servicePath', 'node_modules/custom_library2'))).toBe(false);
+            expect(fs.existsSync(path.join('/servicePath', 'node_modules/custom_library2/file6.txt'))).toBe(false);
+            expect(fs.existsSync(path.join('/servicePath', 'node_modules/custom_library2/file7.txt'))).toBe(false);
+            expect(fs.existsSync(path.join('/servicePath', 'node_modules/custom_library2/file8.txt'))).toBe(false);
         });
 
-        it('should remove unlisted files within the path folder4', () => {
+        it('should keep the specified file and remove all other unlisted files and directories in the same directory of the given path', () => {
             mockFs({
                 '/servicePath': {
                     'file1.txt': 'file1 content',
@@ -272,14 +281,16 @@ describe('ServerlessPruneNodeModulesPath', () => {
 
             expect(fs.existsSync(path.join('/servicePath', 'file1.txt'))).toBe(true);
             expect(fs.existsSync(path.join('/servicePath', 'node_modules/file2.txt'))).toBe(true);
+            expect(fs.existsSync(path.join('/servicePath', 'node_modules/custom_library'))).toBe(false);
             expect(fs.existsSync(path.join('/servicePath', 'node_modules/custom_library/file3.txt'))).toBe(false);
             expect(fs.existsSync(path.join('/servicePath', 'node_modules/custom_library/file4.txt'))).toBe(false);
             expect(fs.existsSync(path.join('/servicePath', 'node_modules/custom_library/file5.txt'))).toBe(false);
+            expect(fs.existsSync(path.join('/servicePath', 'node_modules/custom_library2'))).toBe(false);
             expect(fs.existsSync(path.join('/servicePath', 'node_modules/custom_library2/file6.txt'))).toBe(false);
             expect(fs.existsSync(path.join('/servicePath', 'node_modules/custom_library2/file7.txt'))).toBe(false);
             expect(fs.existsSync(path.join('/servicePath', 'node_modules/custom_library2/file8.txt'))).toBe(false);
         });
-        it('should remove unlisted files within the path folder5', () => {
+        it('should keep the specified files and remove all other unlisted files in the same directory of the given path', () => {
             mockFs({
                 '/servicePath': {
                     'file1.txt': 'file1 content',
@@ -314,6 +325,35 @@ describe('ServerlessPruneNodeModulesPath', () => {
             expect(fs.existsSync(path.join('/servicePath', 'node_modules/custom_library2/file6.txt'))).toBe(true);
             expect(fs.existsSync(path.join('/servicePath', 'node_modules/custom_library2/file7.txt'))).toBe(false);
             expect(fs.existsSync(path.join('/servicePath', 'node_modules/custom_library2/file8.txt'))).toBe(false);
+        });
+        it('should throw an error if', () => {
+            mockFs({
+                '/servicePath': {
+                    'file1.txt': 'file1 content',
+                    'node_modules': {
+                        'file2.txt': 'file2 content',
+                        'custom_library': {
+                            'file3.txt': 'file3 content',
+                            'file4.txt': 'file4 content',
+                            'file5.txt': 'file5 content'
+                        },
+                        'custom_library2': {
+                            'file6.txt': 'file6 content',
+                            'file7.txt': 'file7 content',
+                            'file8.txt': 'file8 content'
+                        }
+                    }
+                }
+            });
+
+            const plugin = new ServerlessPruneNodeModulesPath({
+                cli: { log: jest.fn() },
+                config: { servicePath: '/servicePath' },
+            });
+
+            expect(() => {
+                plugin.deleteUnlistedFiles(['node_modules/wrong_directory/file3.txt', 'node_modules/custom_library2/wrong_file.txt']);
+            }).toThrowError();
         });
     });
 
