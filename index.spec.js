@@ -357,6 +357,35 @@ describe('ServerlessPruneNodeModulesPath', () => {
         });
     });
 
+    describe('preprocessBeforeDeployment', () => {
+        it('should throw an error when given contradictory paths', () => {
+            mockFs({
+                '/servicePath': {
+                    'file1.txt': 'file1 content',
+                    'directory': {
+                        'nested': {
+                            'file2.txt': 'file2 content',
+                            'file3.txt': 'file3 content'
+                        }
+                    }
+                }
+            });
 
+            const plugin = new ServerlessPruneNodeModulesPath({
+                cli: { log: jest.fn() },
+                config: { servicePath: '/servicePath' },
+            });
 
+            expect(() => {
+                plugin.preprocessBeforeDeployment({
+                    pathsToKeep: ['directory/nested/file2.txt'],
+                    pathsToDelete: ['directory/nested']
+                });
+            }).toThrow(Error);
+
+            expect(fs.existsSync(path.join('/servicePath', 'file1.txt'))).toBe(true);
+            expect(fs.existsSync(path.join('/servicePath', 'directory/nested/file2.txt'))).toBe(true);
+            expect(fs.existsSync(path.join('/servicePath', 'directory/nested/file3.txt'))).toBe(true);
+        });
+    });
 });

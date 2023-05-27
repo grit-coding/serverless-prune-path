@@ -18,6 +18,13 @@ class ServerlessPruneNodeModulesPath {
 
     const customVariables = this.serverless.service.custom.pruneNodeModulesPath;
 
+    // Check for contradictory paths
+    if (customVariables.pathsToKeep && customVariables.pathsToDelete) {
+      const contradictions = this.findContradictoryPaths(customVariables.pathsToKeep, customVariables.pathsToDelete);
+      if (contradictions.length > 0) {
+        throw new Error(`Contradictory paths found: ${contradictions.join(', ')}`);
+      }
+    }
 
     if (customVariables.pathsToDelete?.length) {
       this.deleteListedFiles(customVariables.pathsToDelete);
@@ -27,6 +34,18 @@ class ServerlessPruneNodeModulesPath {
       this.deleteUnlistedFiles(customVariables.pathsToKeep);
     }
 
+  }
+
+  findContradictoryPaths(pathsToKeep, pathsToDelete) {
+    const contradictions = [];
+    for (const keepPath of pathsToKeep) {
+      for (const deletePath of pathsToDelete) {
+        if (keepPath.startsWith(deletePath)) {
+          contradictions.push(`Keep: "${keepPath}", Delete: "${deletePath}"`);
+        }
+      }
+    }
+    return contradictions;
   }
 
 
