@@ -1,7 +1,7 @@
 const mockFs = require('mock-fs');
 const path = require('path');
 const fs = require('fs');
-const ServerlessPrunePath = require('../index');
+const ServerlessPrunePath = require('../src/index');
 
 describe('ServerlessPrunePath', () => {
     afterEach(() => {
