@@ -9,6 +9,8 @@ class ServerlessPrunePath {
     this.servicePath = this.serverless.config.servicePath;
     this.hooks = {
       'before:package:createDeploymentArtifacts': this.preprocessBeforeDeployment.bind(this)
+      //when using webpack?
+      //not to remove in the local node_modules
     };
   }
 
@@ -81,7 +83,7 @@ class ServerlessPrunePath {
         if (!keepFilesSet.has(fullPath)) {
           if (file.isDirectory()) {
             // Recursively delete directory if it's not in the keep list.
-            fs.rmdirSync(fullPath, { recursive: true });
+            fs.rmSync(fullPath, { recursive: true });
             this.serverless.cli.log(`Deleted directory: ${fullPath}`);
           } else {
             // Delete file if it's not in the keep list.

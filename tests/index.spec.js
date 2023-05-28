@@ -359,6 +359,7 @@ describe('ServerlessPrunePath', () => {
     });
 
     describe('preprocessBeforeDeployment()', () => {
+        //should throw an error when custom keys are invalid
         it('should throw an error when given contradictory paths', () => {
             mockFs({
                 '/servicePath': {
@@ -470,6 +471,7 @@ describe('ServerlessPrunePath', () => {
 
             expect(result).toEqual([]);
         });
+        //case senstive?
     });
 });
 
