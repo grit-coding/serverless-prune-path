@@ -326,7 +326,7 @@ describe('ServerlessPruneNodeModulesPath', () => {
             expect(fs.existsSync(path.join('/servicePath', 'node_modules/custom_library2/file7.txt'))).toBe(false);
             expect(fs.existsSync(path.join('/servicePath', 'node_modules/custom_library2/file8.txt'))).toBe(false);
         });
-        it('should throw an error if', () => {
+        it('should throw an error if the given path are not found', () => {
             mockFs({
                 '/servicePath': {
                     'file1.txt': 'file1 content',
@@ -354,6 +354,7 @@ describe('ServerlessPruneNodeModulesPath', () => {
             expect(() => {
                 plugin.deleteUnlistedFiles(['node_modules/wrong_directory/file3.txt', 'node_modules/custom_library2/wrong_file.txt']);
             }).toThrowError();
+
         });
     });
 
@@ -371,17 +372,23 @@ describe('ServerlessPruneNodeModulesPath', () => {
                 }
             });
 
+
             const plugin = new ServerlessPruneNodeModulesPath({
                 cli: { log: jest.fn() },
                 config: { servicePath: '/servicePath' },
+                service: {
+                    custom: {
+                        pruneNodeModulesPath: {
+                            pathsToKeep: ['directory/nested/file2.txt'],
+                            pathsToDelete: ['directory/nested']
+                        }
+                    }
+                }
             });
 
             expect(() => {
-                plugin.preprocessBeforeDeployment({
-                    pathsToKeep: ['directory/nested/file2.txt'],
-                    pathsToDelete: ['directory/nested']
-                });
-            }).toThrow(Error);
+                plugin.preprocessBeforeDeployment();
+            }).toThrow();
 
             expect(fs.existsSync(path.join('/servicePath', 'file1.txt'))).toBe(true);
             expect(fs.existsSync(path.join('/servicePath', 'directory/nested/file2.txt'))).toBe(true);
@@ -410,14 +417,19 @@ describe('ServerlessPruneNodeModulesPath', () => {
             const plugin = new ServerlessPruneNodeModulesPath({
                 cli: { log: jest.fn() },
                 config: { servicePath: '/servicePath' },
+                service: {
+                    custom: {
+                        pruneNodeModulesPath: {
+                            pathsToKeep: ['node_modules/custom_library/file3.txt'],
+                            pathsToDelete: ['node_modules/file2.txt']
+                        }
+                    }
+                }
             });
 
             expect(() => {
-                plugin.preprocessBeforeDeployment({
-                    pathsToKeep: ['node_modules/custom_library/file3.txt'],
-                    pathsToDelete: ['node_modules/file2.txt']
-                });
-            }).toThrow(Error);
+                plugin.preprocessBeforeDeployment();
+            }).not.toThrow();
 
             expect(fs.existsSync(path.join('/servicePath', 'file1.txt'))).toBe(true);
             expect(fs.existsSync(path.join('/servicePath', 'node_modules/file2.txt'))).toBe(false);
@@ -431,6 +443,33 @@ describe('ServerlessPruneNodeModulesPath', () => {
     });
 
     describe('findContradictoryPaths()', () => {
+        it('should return contradictory paths when given', () => {
+            const plugin = new ServerlessPruneNodeModulesPath({
+                cli: { log: jest.fn() },
+                config: { servicePath: '/servicePath' },
+            });
 
+            const pathsToKeep = ['path/to/keep/fileToKeep.txt', 'another/path/to/keep'];
+            const pathsToDelete = ['path/to/keep', 'another/path/to/delete'];
+
+            const result = plugin.findContradictoryPaths(pathsToKeep, pathsToDelete);
+
+            expect(result).toEqual(['Keep: "path/to/keep/fileToKeep.txt", Delete: "path/to/keep"']);
+        });
+
+        it('should return empty array when no contradictory paths are given', () => {
+            const plugin = new ServerlessPruneNodeModulesPath({
+                cli: { log: jest.fn() },
+                config: { servicePath: '/servicePath' },
+            });
+
+            const pathsToKeep = ['path/to/keep/fileToKeep.txt', 'another/path/to/keep'];
+            const pathsToDelete = ['path/to/delete', 'another/path/to/delete'];
+
+            const result = plugin.findContradictoryPaths(pathsToKeep, pathsToDelete);
+
+            expect(result).toEqual([]);
+        });
     });
 });
+

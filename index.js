@@ -18,8 +18,8 @@ class ServerlessPruneNodeModulesPath {
 
     const customVariables = this.serverless.service.custom.pruneNodeModulesPath;
 
-    // Check for contradictory paths
     if (customVariables.pathsToKeep && customVariables.pathsToDelete) {
+
       const contradictions = this.findContradictoryPaths(customVariables.pathsToKeep, customVariables.pathsToDelete);
       if (contradictions.length > 0) {
         throw new Error(`Contradictory paths found: ${contradictions.join(', ')}`);
