@@ -2,7 +2,7 @@
 const path = require('path');
 const fs = require('fs');
 
-class ServerlessPruneNodeModulesPath {
+class ServerlessPrunePath {
 
   constructor(serverless) {
     this.serverless = serverless;
@@ -16,7 +16,11 @@ class ServerlessPruneNodeModulesPath {
   preprocessBeforeDeployment() {
     this.serverless.cli.log('Running before createDeploymentArtifacts');
 
-    const customVariables = this.serverless.service.custom.pruneNodeModulesPath;
+    //validate customVariables 
+    // check prunePath exists
+    // pathsToKeep and pathsToDelete check
+
+    const customVariables = this.serverless.service.custom.prunePath;
 
     if (customVariables.pathsToKeep && customVariables.pathsToDelete) {
 
@@ -106,4 +110,4 @@ class ServerlessPruneNodeModulesPath {
   }
 }
 
-module.exports = ServerlessPruneNodeModulesPath;
+module.exports = ServerlessPrunePath;

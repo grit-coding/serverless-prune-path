@@ -1,2 +1,2 @@
-# serverless-prune-node-modules-path
+# serverless-prune-path
  

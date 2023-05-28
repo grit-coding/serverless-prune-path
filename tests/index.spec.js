@@ -1,9 +1,9 @@
 const mockFs = require('mock-fs');
 const path = require('path');
 const fs = require('fs');
-const ServerlessPruneNodeModulesPath = require('./index');
+const ServerlessPrunePath = require('../index');
 
-describe('ServerlessPruneNodeModulesPath', () => {
+describe('ServerlessPrunePath', () => {
     afterEach(() => {
         //Restore the real file system after each test.
         mockFs.restore();
@@ -24,7 +24,7 @@ describe('ServerlessPruneNodeModulesPath', () => {
                 }
             });
 
-            const plugin = new ServerlessPruneNodeModulesPath({
+            const plugin = new ServerlessPrunePath({
                 cli: { log: jest.fn() },
                 config: { servicePath: '/servicePath' },
             });
@@ -53,7 +53,7 @@ describe('ServerlessPruneNodeModulesPath', () => {
                 }
             });
 
-            const plugin = new ServerlessPruneNodeModulesPath({
+            const plugin = new ServerlessPrunePath({
                 cli: { log: jest.fn() },
                 config: { servicePath: '/servicePath' },
             });
@@ -82,7 +82,7 @@ describe('ServerlessPruneNodeModulesPath', () => {
                 }
             });
 
-            const plugin = new ServerlessPruneNodeModulesPath({
+            const plugin = new ServerlessPrunePath({
                 cli: { log: jest.fn() },
                 config: { servicePath: '/servicePath' },
             });
@@ -111,7 +111,7 @@ describe('ServerlessPruneNodeModulesPath', () => {
                 }
             });
 
-            const plugin = new ServerlessPruneNodeModulesPath({
+            const plugin = new ServerlessPrunePath({
                 cli: { log: jest.fn() },
                 config: { servicePath: '/servicePath' },
             });
@@ -142,7 +142,7 @@ describe('ServerlessPruneNodeModulesPath', () => {
                 }
             });
 
-            const plugin = new ServerlessPruneNodeModulesPath({
+            const plugin = new ServerlessPrunePath({
                 cli: { log: jest.fn() },
                 config: { servicePath: '/servicePath' },
             });
@@ -171,7 +171,7 @@ describe('ServerlessPruneNodeModulesPath', () => {
                 }
             });
 
-            const plugin = new ServerlessPruneNodeModulesPath({
+            const plugin = new ServerlessPrunePath({
                 cli: { log: jest.fn() },
                 config: { servicePath: '/servicePath' },
             });
@@ -200,7 +200,7 @@ describe('ServerlessPruneNodeModulesPath', () => {
                 }
             });
 
-            const plugin = new ServerlessPruneNodeModulesPath({
+            const plugin = new ServerlessPrunePath({
                 cli: { log: jest.fn() },
                 config: { servicePath: '/servicePath' },
             });
@@ -234,7 +234,7 @@ describe('ServerlessPruneNodeModulesPath', () => {
                 }
             });
 
-            const plugin = new ServerlessPruneNodeModulesPath({
+            const plugin = new ServerlessPrunePath({
                 cli: { log: jest.fn() },
                 config: { servicePath: '/servicePath' },
             });
@@ -272,7 +272,7 @@ describe('ServerlessPruneNodeModulesPath', () => {
                 }
             });
 
-            const plugin = new ServerlessPruneNodeModulesPath({
+            const plugin = new ServerlessPrunePath({
                 cli: { log: jest.fn() },
                 config: { servicePath: '/servicePath' },
             });
@@ -310,7 +310,7 @@ describe('ServerlessPruneNodeModulesPath', () => {
                 }
             });
 
-            const plugin = new ServerlessPruneNodeModulesPath({
+            const plugin = new ServerlessPrunePath({
                 cli: { log: jest.fn() },
                 config: { servicePath: '/servicePath' },
             });
@@ -346,7 +346,7 @@ describe('ServerlessPruneNodeModulesPath', () => {
                 }
             });
 
-            const plugin = new ServerlessPruneNodeModulesPath({
+            const plugin = new ServerlessPrunePath({
                 cli: { log: jest.fn() },
                 config: { servicePath: '/servicePath' },
             });
@@ -373,12 +373,12 @@ describe('ServerlessPruneNodeModulesPath', () => {
             });
 
 
-            const plugin = new ServerlessPruneNodeModulesPath({
+            const plugin = new ServerlessPrunePath({
                 cli: { log: jest.fn() },
                 config: { servicePath: '/servicePath' },
                 service: {
                     custom: {
-                        pruneNodeModulesPath: {
+                        prunePath: {
                             pathsToKeep: ['directory/nested/file2.txt'],
                             pathsToDelete: ['directory/nested']
                         }
@@ -414,12 +414,12 @@ describe('ServerlessPruneNodeModulesPath', () => {
                 }
             });
 
-            const plugin = new ServerlessPruneNodeModulesPath({
+            const plugin = new ServerlessPrunePath({
                 cli: { log: jest.fn() },
                 config: { servicePath: '/servicePath' },
                 service: {
                     custom: {
-                        pruneNodeModulesPath: {
+                        prunePath: {
                             pathsToKeep: ['node_modules/custom_library/file3.txt'],
                             pathsToDelete: ['node_modules/file2.txt']
                         }
@@ -444,7 +444,7 @@ describe('ServerlessPruneNodeModulesPath', () => {
 
     describe('findContradictoryPaths()', () => {
         it('should return contradictory paths when given', () => {
-            const plugin = new ServerlessPruneNodeModulesPath({
+            const plugin = new ServerlessPrunePath({
                 cli: { log: jest.fn() },
                 config: { servicePath: '/servicePath' },
             });
@@ -458,7 +458,7 @@ describe('ServerlessPruneNodeModulesPath', () => {
         });
 
         it('should return empty array when no contradictory paths are given', () => {
-            const plugin = new ServerlessPruneNodeModulesPath({
+            const plugin = new ServerlessPrunePath({
                 cli: { log: jest.fn() },
                 config: { servicePath: '/servicePath' },
             });
