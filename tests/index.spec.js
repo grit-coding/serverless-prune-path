@@ -358,7 +358,7 @@ describe('ServerlessPrunePath', () => {
         });
     });
 
-    describe('preprocessBeforeDeployment()', () => {
+    describe('afterPackageFinalize()', () => {
         //should throw an error when custom keys are invalid
         it('should throw an error when given contradictory paths', () => {
             mockFs({
@@ -388,7 +388,7 @@ describe('ServerlessPrunePath', () => {
             });
 
             expect(() => {
-                plugin.preprocessBeforeDeployment();
+                plugin.afterPackageFinalize();
             }).toThrow();
 
             expect(fs.existsSync(path.join('/servicePath', 'file1.txt'))).toBe(true);
@@ -429,7 +429,7 @@ describe('ServerlessPrunePath', () => {
             });
 
             expect(() => {
-                plugin.preprocessBeforeDeployment();
+                plugin.afterPackageFinalize();
             }).not.toThrow();
 
             expect(fs.existsSync(path.join('/servicePath', 'file1.txt'))).toBe(true);
@@ -473,5 +473,9 @@ describe('ServerlessPrunePath', () => {
         });
         //case senstive?
     });
+    //individually packed true and false case
+    //all functions
+    //per function
+    //change servicePath to targetPath
 });
 
