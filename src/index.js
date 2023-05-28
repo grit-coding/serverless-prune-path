@@ -14,13 +14,33 @@ class ServerlessPrunePath {
     };
   }
 
+  validateCustomVariables(custom) {
+    // Check if prunePath exists
+    if (!custom || !custom.prunePath) {
+      throw new Error("prunePath configuration is missing from custom");
+    }
+
+    // Check for invalid keys
+    const validKeys = ["pathsToKeep", "pathsToDelete"];
+    const prunePathKeys = Object.keys(custom.prunePath);
+    const invalidKeys = prunePathKeys.filter(key => !validKeys.includes(key));
+
+    if (invalidKeys.length > 0) {
+      throw new Error(`Invalid key(s) in prunePath: ${invalidKeys.join(", ")}`);
+    }
+
+    // Check if at least one of pathsToKeep or pathsToDelete exists
+    if (!custom.prunePath.pathsToKeep && !custom.prunePath.pathsToDelete) {
+      throw new Error("At least one of pathsToKeep or pathsToDelete must exist in prunePath");
+    }
+  }
+
+
 
   preprocessBeforeDeployment() {
     this.serverless.cli.log('Running before createDeploymentArtifacts');
 
-    //validate customVariables 
-    // check prunePath exists
-    // pathsToKeep and pathsToDelete check
+    this.validateCustomVariables(this.serverless.service.custom);
 
     const customVariables = this.serverless.service.custom.prunePath;
 
