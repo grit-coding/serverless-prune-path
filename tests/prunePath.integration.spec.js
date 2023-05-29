@@ -74,7 +74,7 @@ describe('ServerlessPrunePath integration tests', () => {
             await expect(plugin.afterPackageFinalize()).rejects.toThrow("prunePath configuration is missing from custom");
         });
 
-        test('Should throw error when wrong config key is given', async () => {
+        test('Should throw error when the given key is not correct', async () => {
             const plugin = new ServerlessPrunePath({
                 cli: { log: jest.fn() },
                 config: { servicePath: '/servicePath' },
@@ -91,6 +91,17 @@ describe('ServerlessPrunePath integration tests', () => {
         });
     });
 
-    //all functions
-    //per function
+    describe('package individually', () => {
+        describe('false', () => {
+
+        });
+        describe('true', () => {
+            describe('all lambdas', () => {
+
+            });
+            describe('specific lambda', () => {
+
+            });
+        });
+    });
 });
