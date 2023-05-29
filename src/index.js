@@ -108,7 +108,17 @@ class ServerlessPrunePath {
   deleteUnlistedFiles(pathsToKeep, unzipDir) {
     const keepFilesSet = new Set(pathsToKeep.map(filePath => path.join(unzipDir, filePath)));
 
-    const invalidPath = [...keepFilesSet].find(path => fs.existsSync(path) === false);
+    const invalidPath = [...keepFilesSet].find(path => {
+      const fileExist = fs.existsSync(path) === false;
+      if (fileExist) {
+        const realPath = fs.realpathSync(path);
+        if (realPath !== path) {
+          this.serverless.cli.log(`Case does not match for: ${path}. Real path: ${realPath}`);
+          return true;
+        }
+      }
+      return false;
+    });
 
     if (invalidPath?.length) {
       throw new Error(`File not found: ${invalidPath}`);
