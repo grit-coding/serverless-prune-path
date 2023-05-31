@@ -32,9 +32,8 @@ async function createZipFile(zipPath, fileStructure) {
 
     fs.rmSync(tmpDir, { recursive: true });
 }
-//Helper function to unzip file after prune process in .serverless
 
-describe('ServerlessPrunePath integration tests', () => {
+describe('ServerlessPrunePath plugin', () => {
     beforeEach(async () => {
         mockFs({
             '/servicePath/.serverless': {}
@@ -61,7 +60,36 @@ describe('ServerlessPrunePath integration tests', () => {
 
     afterEach(mockFs.restore);
 
-    describe('customVariables', () => {
+    describe('Successful scenarios', () => {
+        describe('false', () => {
+            test('happy path', async () => {
+                const plugin = new ServerlessPrunePath({
+                    cli: { log: jest.fn() },
+                    config: { servicePath: '/servicePath' },
+                    service: {
+                        custom: {
+                            prunePath: {
+                                pathsToKeep: []
+                            }
+                        }
+                    }
+                });
+
+                await expect(plugin.afterPackageFinalize()).rejects.toThrow("Invalid key(s) in prunePath: wrongKey");
+            });
+
+        });
+        describe('true', () => {
+            describe('all lambdas', () => {
+
+            });
+            describe('specific lambda', () => {
+
+            });
+        });
+    });
+
+    describe('Failure scenarios', () => {
         test('Should throw error when no custom variables are given', async () => {
             const plugin = new ServerlessPrunePath({
                 cli: { log: jest.fn() },
@@ -88,20 +116,6 @@ describe('ServerlessPrunePath integration tests', () => {
             });
 
             await expect(plugin.afterPackageFinalize()).rejects.toThrow("Invalid key(s) in prunePath: wrongKey");
-        });
-    });
-
-    describe('package individually', () => {
-        describe('false', () => {
-
-        });
-        describe('true', () => {
-            describe('all lambdas', () => {
-
-            });
-            describe('specific lambda', () => {
-
-            });
         });
     });
 });

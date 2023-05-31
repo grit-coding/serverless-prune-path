@@ -14,7 +14,7 @@ class ServerlessPrunePath {
     };
   }
 
-  validateCustomVariables(custom) {
+  validateCustomVariables(custom) { //change name to config
     // Check if prunePath exists
     if (!custom || !custom.prunePath) {
       throw new Error("prunePath configuration is missing from custom");
@@ -33,6 +33,40 @@ class ServerlessPrunePath {
     if (!custom.prunePath.pathsToKeep && !custom.prunePath.pathsToDelete) {
       throw new Error("At least one of pathsToKeep or pathsToDelete must exist in prunePath");
     }
+
+    let pathsToKeepKeys = [];
+    let pathsToDeleteKeys = [];
+    if (custom.prunePath.pathsToKeep) {
+      pathsToKeepKeys = Object.keys(custom.prunePath.pathsToKeep);
+    }
+    if (custom.prunePath.pathsToDelete) {
+      pathsToDeleteKeys = Object.keys(custom.prunePath.pathsToDelete);
+    }
+
+    const keepAllWithFunc = pathsToKeepKeys.includes('all') && pathsToKeepKeys.length > 1;
+    const deleteAllWithFunc = pathsToDeleteKeys.includes('all') && pathsToDeleteKeys.length > 1;
+
+    if (keepAllWithFunc || deleteAllWithFunc) {
+      throw new Error("The 'all' keyword in pathsToKeep or pathsToDelete cannot be used alongside specific function paths. Please use 'all' alone or specify individual functions.");
+    }
+
+    let functionNames = Object.keys(this.serverless.service.functions);
+
+    let invalidFunctionNamesInKeep = pathsToKeepKeys.filter(
+      functionName => !functionNames.includes(functionName) && functionName !== 'all'
+    );
+    let invalidFunctionNamesInDelete = pathsToDeleteKeys.filter(
+      functionName => !functionNames.includes(functionName) && functionName !== 'all'
+    );
+
+    if (invalidFunctionNamesInKeep.length > 0) {
+      throw new Error(`Invalid function name(s) in pathsToKeep: ${invalidFunctionNamesInKeep.join(", ")}`);
+    }
+
+    if (invalidFunctionNamesInDelete.length > 0) {
+      throw new Error(`Invalid function name(s) in pathsToDelete: ${invalidFunctionNamesInDelete.join(", ")}`);
+    }
+
   }
 
 
@@ -41,7 +75,11 @@ class ServerlessPrunePath {
   async afterPackageFinalize() {
     this.serverless.cli.log('Running afterPackageFinalize');
 
-    this.validateCustomVariables(this.serverless.service.custom);
+    try {
+      this.validateCustomVariables(this.serverless.service.custom);
+    } catch (error) {
+      this.serverless.cli.log(error);
+    }
 
     const customVariables = this.serverless.service.custom.prunePath;
 
@@ -53,6 +91,7 @@ class ServerlessPrunePath {
       }
     }
 
+    //both all
     const slsPackages = fs.readdirSync(this.servicePath).filter(file => file.endsWith('.zip'));
     for (const singlePackage of slsPackages) {
       const packagePath = path.join(this.servicePath, singlePackage);
@@ -67,11 +106,11 @@ class ServerlessPrunePath {
 
       // Prune the files.
       if (customVariables.pathsToDelete?.length) {
-        this.deleteListedFiles(customVariables.pathsToDelete, unzipDir);
+        this.deleteListedFiles(customVariables.pathsToDelete.all, unzipDir);
       }
 
       if (customVariables.pathsToKeep?.length) {
-        this.deleteUnlistedFiles(customVariables.pathsToKeep, unzipDir);
+        this.deleteUnlistedFiles(customVariables.pathsToKeep.all, unzipDir);
       }
 
       // Re-zip the package.
@@ -91,14 +130,20 @@ class ServerlessPrunePath {
 
 
   findContradictoryPaths(pathsToKeep, pathsToDelete) {
+
+    const uniqueKeepPaths = [...new Set(Object.values(pathsToKeep).flat())];
+    const uniqueDeletePaths = [...new Set(Object.values(pathsToDelete).flat())];
+
     const contradictions = [];
-    for (const keepPath of pathsToKeep) {
-      for (const deletePath of pathsToDelete) {
+
+    uniqueKeepPaths.forEach(keepPath => {
+      uniqueDeletePaths.forEach(deletePath => {
         if (keepPath.startsWith(deletePath)) {
           contradictions.push(`Keep: "${keepPath}", Delete: "${deletePath}"`);
         }
-      }
-    }
+      });
+    });
+
     return contradictions;
   }
 
