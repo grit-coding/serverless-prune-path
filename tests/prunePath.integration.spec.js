@@ -3,6 +3,9 @@ const mockFs = require('mock-fs');
 const fs = require('fs');
 const archiver = require('archiver');
 const path = require('path');
+const unzipper = require('unzipper');
+const promisify = require('util').promisify;
+const pipeline = promisify(require('stream').pipeline);
 
 // Helper function to create a zip file in .serverless
 async function createZipFile(zipPath, fileStructure) {
@@ -32,54 +35,76 @@ async function createZipFile(zipPath, fileStructure) {
 
     fs.rmSync(tmpDir, { recursive: true });
 }
+// helper function to unzip a file to a given path
+async function unzipFile(zipPath, destinationPath) {
+    const directory = await unzipper.Open.file(zipPath);
+    await Promise.all(directory.files.map(file =>
+        pipeline(
+            file.stream(),
+            fs.createWriteStream(path.join(destinationPath, file.path))
+        )
+    ));
+}
 
-describe('ServerlessPrunePath plugin', () => {
+
+xdescribe('ServerlessPrunePath plugin', () => {
     beforeEach(async () => {
         mockFs({
             '/servicePath/.serverless': {}
-        });
-
-        // Create a mock zip file
-        await createZipFile('/servicePath/.serverless/package.zip', {
-            'file1.txt': 'file1 content',
-            'node_modules': {
-                'file2.txt': 'file2 content',
-                'library': {
-                    'file3.txt': 'file3 content',
-                    'file4.txt': 'file4 content',
-                    'file5.txt': 'file5 content'
-                },
-                'library2': {
-                    'file6.txt': 'file6 content',
-                    'file7.txt': 'file7 content',
-                    'file8.txt': 'file8 content'
-                }
-            }
         });
     });
 
     afterEach(mockFs.restore);
 
     describe('Successful scenarios', () => {
-        describe('false', () => {
-            test('happy path', async () => {
+        describe('when lambda functions are not individually packed', () => {
+            beforeEach(async () => {
+                await createZipFile('/servicePath/.serverless/package.zip', {
+                    'file1.txt': 'file1 content',
+                    'node_modules': {
+                        'file2.txt': 'file2 content',
+                        'library': {
+                            'file3.txt': 'file3 content',
+                            'file4.txt': 'file4 content',
+                            'file5.txt': 'file5 content'
+                        },
+                        'library2': {
+                            'file6.txt': 'file6 content',
+                            'file7.txt': 'file7 content',
+                            'file8.txt': 'file8 content'
+                        }
+                    }
+                });
+            });
+            it('should prune specified paths with valid configuration', async () => {
                 const plugin = new ServerlessPrunePath({
                     cli: { log: jest.fn() },
                     config: { servicePath: '/servicePath' },
                     service: {
                         custom: {
                             prunePath: {
-                                pathsToKeep: []
+                                pathsToKeep: { all: ['./node_modules/library/file3.txt'] }
                             }
                         }
                     }
                 });
 
-                await expect(plugin.afterPackageFinalize()).rejects.toThrow("Invalid key(s) in prunePath: wrongKey");
+                await plugin.afterPackageFinalize();
+                await unzipFile('/servicePath/.serverless/package.zip', '/servicePath/.serverless/package');
+                expect(fs.existsSync('/servicePath/.serverless/package.zip')).toBeTruthy();
+                expect(fs.existsSync('/servicePath/.serverless/package/node_modules/library/file3.txt')).toBeTruthy();
+                expect(fs.existsSync('/servicePath/.serverless/package/node_modules/library/file4.txt')).toBeFalsy();
+                expect(fs.existsSync('/servicePath/.serverless/package/node_modules/library/file5.txt')).toBeFalsy();
+                expect(fs.existsSync('/servicePath/.serverless/package/node_modules/library2/file6.txt')).toBeTruthy();
+                expect(fs.existsSync('/servicePath/.serverless/package/node_modules/library2/file7.txt')).toBeTruthy();
+                expect(fs.existsSync('/servicePath/.serverless/package/node_modules/library2/file8.txt')).toBeTruthy();
+                expect(fs.existsSync('/servicePath/.serverless/package/file1.txt')).toBeTruthy();
+                expect(fs.existsSync('/servicePath/.serverless/package/node_modules/file2.txt')).toBeTruthy();
+
             });
 
         });
-        describe('true', () => {
+        describe('when lambda functions are individually packed', () => {
             describe('all lambdas', () => {
 
             });

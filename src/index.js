@@ -14,10 +14,16 @@ class ServerlessPrunePath {
     };
   }
 
-  validateCustomVariables(custom) { //change name to config
+  validateConfiguration(custom) {
     // Check if prunePath exists
-    if (!custom || !custom.prunePath) {
+
+    if (!custom || Object.keys(custom).includes('prunePath') === false) {
       throw new Error("prunePath configuration is missing from custom");
+    }
+
+    // Check if at least one of pathsToKeep or pathsToDelete exists
+    if (!Object.keys(custom.prunePath).length) {
+      throw new Error("At least one of pathsToKeep or pathsToDelete must exist in prunePath");
     }
 
     // Check for invalid keys
@@ -29,10 +35,7 @@ class ServerlessPrunePath {
       throw new Error(`Invalid key(s) in prunePath: ${invalidKeys.join(", ")}`);
     }
 
-    // Check if at least one of pathsToKeep or pathsToDelete exists
-    if (!custom.prunePath.pathsToKeep && !custom.prunePath.pathsToDelete) {
-      throw new Error("At least one of pathsToKeep or pathsToDelete must exist in prunePath");
-    }
+
 
     let pathsToKeepKeys = [];
     let pathsToDeleteKeys = [];
@@ -75,11 +78,9 @@ class ServerlessPrunePath {
   async afterPackageFinalize() {
     this.serverless.cli.log('Running afterPackageFinalize');
 
-    try {
-      this.validateCustomVariables(this.serverless.service.custom);
-    } catch (error) {
-      this.serverless.cli.log(error);
-    }
+    // try {
+    this.validateConfiguration(this.serverless.service.custom);
+
 
     const customVariables = this.serverless.service.custom.prunePath;
 
@@ -124,7 +125,10 @@ class ServerlessPrunePath {
       // Delete the unzipped directory.
       fs.rmSync(unzipDir, { recursive: true });
     }
-
+    // } catch (error) {
+    //   this.serverless.cli.log(error);
+    //   return;
+    // }
   }
 
 
