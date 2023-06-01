@@ -1,5 +1,5 @@
 
-# Serverless PrunePath Plugin
+# Serverless PrunePath Plugin (draft)
 
 This Serverless plugin allows you to optimize your AWS Lambda package before deployment by providing the ability to selectively prune your package. You can either specify paths to keep or paths to delete within the given directory.
 
