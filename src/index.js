@@ -22,7 +22,7 @@ class ServerlessPrunePath {
     }
 
     // Check if at least one of pathsToKeep or pathsToDelete exists
-    if (!Object.keys(custom.prunePath).length) {
+    if (!Object.keys(custom.prunePath).length || (!custom.prunePath.pathsToKeep && !custom.prunePath.pathsToDelete)) {
       throw new Error("At least one of pathsToKeep or pathsToDelete must exist in prunePath");
     }
 
@@ -55,6 +55,10 @@ class ServerlessPrunePath {
 
     let functionNames = Object.keys(this.serverless.service.functions);
 
+    if (functionNames.length === 0) {
+      throw new Error("No functions found in serverless service functions. Please add at least one function in the 'functions' section of your serverless.yml file.");
+    }
+
     let invalidFunctionNamesInKeep = pathsToKeepKeys.filter(
       functionName => !functionNames.includes(functionName) && functionName !== 'all'
     );
@@ -78,57 +82,57 @@ class ServerlessPrunePath {
   async afterPackageFinalize() {
     this.serverless.cli.log('Running afterPackageFinalize');
 
-    // try {
-    this.validateConfiguration(this.serverless.service.custom);
+    try {
+      this.validateConfiguration(this.serverless.service.custom);
 
+      const customVariables = this.serverless.service.custom.prunePath;
 
-    const customVariables = this.serverless.service.custom.prunePath;
+      if (customVariables.pathsToKeep && customVariables.pathsToDelete) {
 
-    if (customVariables.pathsToKeep && customVariables.pathsToDelete) {
-
-      const contradictions = this.findContradictoryPaths(customVariables.pathsToKeep, customVariables.pathsToDelete);
-      if (contradictions.length > 0) {
-        throw new Error(`Contradictory paths found: ${contradictions.join(', ')}`);
+        const contradictions = this.findContradictoryPaths(customVariables.pathsToKeep, customVariables.pathsToDelete);
+        if (contradictions.length > 0) {
+          throw new Error(`Contradictory paths found: ${contradictions.join(', ')}`);
+        }
       }
+
+      //both all
+      const slsPackages = fs.readdirSync(this.servicePath).filter(file => file.endsWith('.zip'));
+
+      for (const singlePackage of slsPackages) {
+
+        const packagePath = path.join(this.servicePath, singlePackage);
+        const unzipDir = path.join(this.servicePath, path.basename(singlePackage, '.zip'));
+
+        const directory = await unzipper.Open.file(packagePath);
+        await directory.extract({ path: unzipDir });
+
+        // Delete the zipped package.
+        fs.unlinkSync(packagePath);
+
+        // Prune the files.
+        if (customVariables.pathsToDelete?.all?.length) {
+          this.deleteListedFiles(customVariables.pathsToDelete.all, unzipDir);
+        }
+
+        if (customVariables.pathsToKeep?.all?.length) {
+          this.deleteUnlistedFiles(customVariables.pathsToKeep.all, unzipDir);
+        }
+
+        // Re-zip the package.
+        const output = fs.createWriteStream(packagePath);
+        const archive = archiver('zip');
+
+        archive.pipe(output);
+        archive.directory(unzipDir, false);
+        await archive.finalize();
+
+        // Delete the unzipped directory.
+        fs.rmSync(unzipDir, { recursive: true });
+      }
+    } catch (error) {
+      this.serverless.cli.log(error);
+      return;
     }
-
-    //both all
-    const slsPackages = fs.readdirSync(this.servicePath).filter(file => file.endsWith('.zip'));
-    for (const singlePackage of slsPackages) {
-      const packagePath = path.join(this.servicePath, singlePackage);
-      const unzipDir = path.join(this.servicePath, path.basename(singlePackage, '.zip'));
-
-      // Unzip the package to a specific directory.
-      const directory = await unzipper.Open.file(packagePath);
-      await directory.extract({ path: unzipDir });
-
-      // Delete the zipped package.
-      fs.unlinkSync(packagePath);
-
-      // Prune the files.
-      if (customVariables.pathsToDelete?.length) {
-        this.deleteListedFiles(customVariables.pathsToDelete.all, unzipDir);
-      }
-
-      if (customVariables.pathsToKeep?.length) {
-        this.deleteUnlistedFiles(customVariables.pathsToKeep.all, unzipDir);
-      }
-
-      // Re-zip the package.
-      const output = fs.createWriteStream(packagePath);
-      const archive = archiver('zip');
-
-      archive.pipe(output);
-      archive.directory(unzipDir, false);
-      await archive.finalize();
-
-      // Delete the unzipped directory.
-      fs.rmSync(unzipDir, { recursive: true });
-    }
-    // } catch (error) {
-    //   this.serverless.cli.log(error);
-    //   return;
-    // }
   }
 
 
@@ -210,8 +214,15 @@ class ServerlessPrunePath {
       const fullPath = path.join(unzipDir, deletePath);
 
       if (fs.existsSync(fullPath)) {
-        fs.unlinkSync(fullPath);
-        this.serverless.cli.log(`Deleted: ${fullPath}`);
+        if (fs.lstatSync(fullPath).isDirectory()) {
+          // Recursive deletion of directory if it exists
+          fs.rmSync(fullPath, { recursive: true });
+          this.serverless.cli.log(`Deleted directory: ${fullPath}`);
+        } else {
+          // File deletion
+          fs.unlinkSync(fullPath);
+          this.serverless.cli.log(`Deleted: ${fullPath}`);
+        }
       } else {
         this.serverless.cli.log(`File not found: ${fullPath}`);
       }
