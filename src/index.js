@@ -89,7 +89,7 @@ class ServerlessPrunePath {
 
       if (customVariables.pathsToKeep && customVariables.pathsToDelete) {
 
-        const contradictions = this.findContradictoryPaths(customVariables.pathsToKeep, customVariables.pathsToDelete);
+        const contradictions = this.validatePaths(customVariables.pathsToKeep, customVariables.pathsToDelete); //change to validatePaths
         if (contradictions.length > 0) {
           throw new Error(`Contradictory paths found: ${contradictions.join(', ')}`);
         }
@@ -124,7 +124,13 @@ class ServerlessPrunePath {
 
         archive.pipe(output);
         archive.directory(unzipDir, false);
-        await archive.finalize();
+        archive.finalize();
+
+        // Use a promise to listen for the close event.
+        await new Promise((resolve, reject) => {
+          output.on('close', resolve);
+          archive.on('error', reject);  // You might want to handle errors too.
+        });
 
         // Delete the unzipped directory.
         fs.rmSync(unzipDir, { recursive: true });
@@ -137,13 +143,22 @@ class ServerlessPrunePath {
 
 
 
-  findContradictoryPaths(pathsToKeep, pathsToDelete) {
-
+  validatePaths(pathsToKeep, pathsToDelete) {
     const uniqueKeepPaths = [...new Set(Object.values(pathsToKeep).flat())];
     const uniqueDeletePaths = [...new Set(Object.values(pathsToDelete).flat())];
 
     const contradictions = [];
 
+    // Check contradictions within keep paths
+    uniqueKeepPaths.forEach((keepPath, i) => {
+      uniqueKeepPaths.slice(i + 1).forEach(otherKeepPath => {
+        if (otherKeepPath.startsWith(keepPath) || keepPath.startsWith(otherKeepPath)) {
+          contradictions.push(`Keep: "${keepPath}", Keep: "${otherKeepPath}"`);
+        }
+      });
+    });
+
+    // Check contradictions between keep paths and delete paths
     uniqueKeepPaths.forEach(keepPath => {
       uniqueDeletePaths.forEach(deletePath => {
         if (keepPath.startsWith(deletePath)) {
@@ -154,6 +169,7 @@ class ServerlessPrunePath {
 
     return contradictions;
   }
+
 
 
 

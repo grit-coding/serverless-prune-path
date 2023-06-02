@@ -1,7 +1,7 @@
 const mockFs = require('mock-fs');
 const path = require('path');
 const fs = require('fs');
-const ServerlessPrunePath = require('../src/index');
+const ServerlessPrunePath = require('../../src/index');
 
 const mockServicePathStructure = () => {
     return {
@@ -230,7 +230,7 @@ describe('ServerlessPrunePath', () => {
         });
     });
 
-    describe('findContradictoryPaths()', () => {
+    describe('validatePaths()', () => {
         it('should return contradictory paths when given', () => {
             const plugin = new ServerlessPrunePath({
                 cli: { log: jest.fn() },
@@ -240,9 +240,23 @@ describe('ServerlessPrunePath', () => {
             const pathsToKeep = { all: ['path/to/keep/fileToKeep.txt', 'another/path/to/keep'] };
             const pathsToDelete = { all: ['path/to/keep', 'another/path/to/delete'] };
 
-            const result = plugin.findContradictoryPaths(pathsToKeep, pathsToDelete);
+            const result = plugin.validatePaths(pathsToKeep, pathsToDelete);
 
             expect(result).toEqual(['Keep: "path/to/keep/fileToKeep.txt", Delete: "path/to/keep"']);
+        });
+
+        it('should return contradictory paths within pathsToKeep', () => {
+            const plugin = new ServerlessPrunePath({
+                cli: { log: jest.fn() },
+                config: { servicePath: '/servicePath' },
+            });
+
+            const pathsToKeep = { all: ['path/to/keep/fileToKeep.txt', 'path/to/keep'] };
+            const pathsToDelete = {};
+
+            const result = plugin.validatePaths(pathsToKeep, pathsToDelete);
+
+            expect(result).toEqual(["Keep: \"path/to/keep/fileToKeep.txt\", Keep: \"path/to/keep\""]);
         });
 
         it('should return empty array when no contradictory paths are given', () => {
@@ -253,13 +267,27 @@ describe('ServerlessPrunePath', () => {
             const pathsToKeep = { all: ['path/to/keep/fileToKeep.txt', 'another/path/to/keep'] };
             const pathsToDelete = { all: ['path/to/delete', 'another/path/to/delete'] };
 
-            const result = plugin.findContradictoryPaths(pathsToKeep, pathsToDelete);
+            const result = plugin.validatePaths(pathsToKeep, pathsToDelete);
 
             expect(result).toEqual([]);
         });
+
+
     });
 
     describe('validateConfiguration()', () => {
+        it('should throw error when custom is missing', () => {
+            const plugin = new ServerlessPrunePath({
+                cli: { log: jest.fn() },
+                config: { servicePath: '/servicePath' },
+            });
+
+
+            expect(() => plugin.validateConfiguration(undefined)).toThrow("prunePath configuration is missing from custom");
+            expect(() => plugin.validateConfiguration(null)).toThrow("prunePath configuration is missing from custom");
+
+        });
+
         it('should throw error when prunePath configuration is missing from custom', () => {
             const plugin = new ServerlessPrunePath({
                 cli: { log: jest.fn() },
