@@ -87,13 +87,11 @@ class ServerlessPrunePath {
 
       const customVariables = this.serverless.service.custom.prunePath;
 
-      if (customVariables.pathsToKeep && customVariables.pathsToDelete) {
-
-        const contradictions = this.validatePaths(customVariables.pathsToKeep, customVariables.pathsToDelete); //change to validatePaths
-        if (contradictions.length > 0) {
-          throw new Error(`Contradictory paths found: ${contradictions.join(', ')}`);
-        }
+      const contradictions = this.validatePaths(customVariables.pathsToKeep, customVariables.pathsToDelete);
+      if (contradictions.length > 0) {
+        throw new Error(`Contradictory paths found: ${contradictions.join(', ')}`);
       }
+
 
       //both all
       const slsPackages = fs.readdirSync(this.servicePath).filter(file => file.endsWith('.zip'));
@@ -143,7 +141,8 @@ class ServerlessPrunePath {
 
 
 
-  validatePaths(pathsToKeep, pathsToDelete) {
+  validatePaths(pathsToKeep = {}, pathsToDelete = {}) {
+
     const uniqueKeepPaths = [...new Set(Object.values(pathsToKeep).flat())];
     const uniqueDeletePaths = [...new Set(Object.values(pathsToDelete).flat())];
 
