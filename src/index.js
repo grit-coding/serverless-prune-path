@@ -86,7 +86,7 @@ class ServerlessPrunePath {
 
 
   async afterPackageFinalize() {
-    this.serverless.cli.log('Running afterPackageFinalize');
+    this.serverless.cli.log('Serverless-prune-path plugin is running: after package finalization stage.');
 
     this.validateConfiguration(this.serverless.service.custom);
 

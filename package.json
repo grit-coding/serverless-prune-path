@@ -1,13 +1,25 @@
 {
   "name": "serverless-prune-path",
-  "version": "1.0.0",
-  "description": "",
+  "version": "1.0.2",
+  "description": "A Serverless Framework plugin designed to manage and optimize the file paths included in deployment packages. It allows users to specify which paths should be kept or removed, offering granular control over the package's contents, which can result in smaller deployment sizes and more efficient executions.",
   "main": "src/index.js",
+  "files": [
+    "src/index.js"
+  ],
   "scripts": {
-    "test": "jest --verbose",
+    "unit-test": "jest unit --verbose",
+    "integration-test": "jest integration --verbose",
     "coverage": "jest --coverage"
   },
-  "author": "",
+  "keywords": [
+    "serverless",
+    "serverless-plugin",
+    "prune-path",
+    "path-pruning",
+    "packaging-pruning",
+    "serverless-pruning"
+  ],
+  "author": "Narae",
   "license": "ISC",
   "peerDependencies": {
     "serverless": "^3.0.0"

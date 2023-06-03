@@ -1,5 +1,5 @@
 
-# Serverless PrunePath Plugin (draft)
+# Serverless Prune Path
 [![Coverage Status](https://coveralls.io/repos/github/grit-coding/serverless-prune-path/badge.svg?branch=main)](https://coveralls.io/github/grit-coding/serverless-prune-path?branch=main)
 
 This Serverless plugin allows you to optimize your AWS Lambda package before deployment by providing the ability to selectively prune your package. You can either specify paths to keep or paths to delete within the given directory.
@@ -14,7 +14,7 @@ This can be particularly useful when your project has dependencies or files that
 
 Install the plugin via npm:
 ```bash
-npm install serverless-prune-path
+npm install --save-dev serverless-prune-path
 ```
 
 ### Configuration
