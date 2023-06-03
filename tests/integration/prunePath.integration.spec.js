@@ -586,7 +586,7 @@ describe('ServerlessPrunePath plugin', () => {
         });
     });
 
-    fdescribe('Failing scenarios', () => {
+    fdescribe('Failing scenarios', () => { // some of the unit tests cover this already. not sure if this integration test is needed. but it will give me confidence when refactoring the code.
         describe('when functions are not defined', () => {
             it('and service.functions are not defined, it should throw an error', async () => {
                 const plugin = new ServerlessPrunePath({
