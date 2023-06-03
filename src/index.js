@@ -16,7 +16,6 @@ class ServerlessPrunePath {
 
   validateConfiguration(custom) {
     // Check if prunePath exists
-
     if (!custom || Object.keys(custom).includes('prunePath') === false) {
       throw new Error("prunePath configuration is missing from custom");
     }
@@ -36,7 +35,6 @@ class ServerlessPrunePath {
     }
 
 
-
     let pathsToKeepKeys = [];
     let pathsToDeleteKeys = [];
     if (custom.prunePath.pathsToKeep) {
@@ -46,6 +44,10 @@ class ServerlessPrunePath {
       pathsToDeleteKeys = Object.keys(custom.prunePath.pathsToDelete);
     }
 
+    if (Array.isArray(custom.prunePath.pathsToKeep) || Array.isArray(custom.prunePath.pathsToDelete)) {
+      throw new Error("pathsToKeep and pathsToDelete must contain the keyword \"all\""); //todo change next version
+
+    }
     const keepAllWithFunc = pathsToKeepKeys.includes('all') && pathsToKeepKeys.length > 1;
     const deleteAllWithFunc = pathsToDeleteKeys.includes('all') && pathsToDeleteKeys.length > 1;
 
@@ -144,7 +146,10 @@ class ServerlessPrunePath {
 
     const uniqueKeepPaths = [...new Set(Object.values(pathsToKeep).flat())];
     const uniqueDeletePaths = [...new Set(Object.values(pathsToDelete).flat())];
-
+    const keyWithEmptyValue = Object.entries(pathsToKeep).find(([key, value]) => !!key && value.length === 0) || Object.entries(pathsToDelete).find(([key, value]) => !!key && value.length === 0);
+    if (keyWithEmptyValue) {
+      throw new Error(`Empty value for key: ${keyWithEmptyValue[0]}`);
+    }
     const contradictions = [];
 
     // Check contradictions within keep paths
