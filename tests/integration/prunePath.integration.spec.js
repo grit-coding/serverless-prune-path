@@ -92,11 +92,11 @@ function deleteDirectory(directoryPath) {
     }
 }
 describe('ServerlessPrunePath plugin', () => {
-    afterEach(() => {
-        deleteDirectory(path.join(process.cwd(), '.serverless'));
-    });
-    let currentDirectory = process.cwd();
     describe('Successful scenarios', () => {
+        afterEach(() => {
+            deleteDirectory(path.join(process.cwd(), '.serverless'));
+        });
+        let currentDirectory = process.cwd();
         describe('when lambda functions are packed together', () => {
             beforeEach(async () => {
                 await createZippedFileStructure('.serverless/package.zip', {
@@ -584,5 +584,144 @@ describe('ServerlessPrunePath plugin', () => {
             });
 
         });
+    });
+
+    fdescribe('Failing scenarios', () => {
+        describe('when functions are not defined', () => {
+            it('and service.functions are not defined, it should throw an error', async () => {
+                const plugin = new ServerlessPrunePath({
+                    cli: { log: jest.fn() },
+                    config: { servicePath: process.cwd() },
+                    service: {
+                        custom: {
+                            prunePath: {
+                                pathsToKeep: { all: ['./node_modules/library/file3.txt'] }
+                            }
+                        },
+                        // Note: functions are missing
+                    }
+                });
+
+                await expect(plugin.afterPackageFinalize()).rejects.toThrow("No functions found in serverless service functions. Please add at least one function in the 'functions' section of your serverless.yml file.");
+            });
+
+            // it('and service.functions are empty, it should throw an error', async () => {
+            //     const plugin = new ServerlessPrunePath({
+            //         cli: { log: jest.fn() },
+            //         config: { servicePath: process.cwd() },
+            //         service: {
+            //             custom: {
+            //                 prunePath: {
+            //                     pathsToKeep: { all: ['./node_modules/library/file3.txt'] }
+            //                 }
+            //             },
+            //             functions: {}
+            //         }
+            //     });
+            //     expect(async () => await plugin.afterPackageFinalize()).toThrow("No functions found in serverless service functions. Please add at least one function in the 'functions' section of your serverless.yml file.");
+            // });
+        });
+
+        xdescribe('when configuration is invalid', () => {
+            it('custom missing: should throw an error', async () => {
+                const plugin = new ServerlessPrunePath({
+                    cli: { log: jest.fn() },
+                    config: { servicePath: process.cwd() },
+                    service: {
+                        // Note: custom is missing
+                        functions: {
+                            function1: {}
+                        }
+                    }
+                });
+
+                expect(async () => await plugin.afterPackageFinalize()).toThrow("prunePath configuration is missing from custom");
+                // await expect(plugin.afterPackageFinalize()).rejects.toThrow("prunePath configuration is missing from custom");
+            });
+
+            // it('prunePath missing: should throw an error', async () => {
+            //     const plugin = new ServerlessPrunePath({
+            //         cli: { log: jest.fn() },
+            //         config: { servicePath: process.cwd() },
+            //         service: {
+            //             custom: {},
+            //             functions: {
+            //                 function1: {}
+            //             }
+            //         }
+            //     });
+
+            //     await expect(plugin.afterPackageFinalize()).rejects.toThrow("prunePath configuration is missing from custom");
+            // });
+
+            // it('empty prunePath: should throw an error', async () => {
+            //     const plugin = new ServerlessPrunePath({
+            //         cli: { log: jest.fn() },
+            //         config: { servicePath: process.cwd() },
+            //         service: {
+            //             custom: {
+            //                 prunePath: {}
+            //             },
+            //             functions: {
+            //                 function1: {}
+            //             }
+            //         }
+            //     });
+
+            //     await expect(plugin.afterPackageFinalize()).rejects.toThrow("At least one of pathsToKeep or pathsToDelete must exist in prunePath");
+            // });
+
+            // it('invalid prunPath keys: should throw an error', async () => {
+            //     const plugin = new ServerlessPrunePath({
+            //         cli: { log: jest.fn() },
+            //         config: { servicePath: process.cwd() },
+            //         service: {
+            //             custom: {
+            //                 prunePath: {
+            //                     // Note: invalid prunePath keys
+            //                     wrongKey: {},
+            //                     wrongKey2: {}
+            //                 }
+            //             },
+            //             functions: {
+            //                 function1: {}
+            //             }
+            //         }
+            //     });
+
+            //     await expect(plugin.afterPackageFinalize()).rejects.toThrow("Invalid key(s) in prunePath: wrongKey, wrongKey2");
+            // });
+            //all missing
+            //cannot use all with other keys
+            //all empty
+        });
+
+        xdescribe('when paths are invalid', () => {
+            //global path
+            //contradictory within pathsToKeep
+            //contradictory within pathsToKeep and pathsToDelete
+
+            it('should throw an error', async () => {
+                const plugin = new ServerlessPrunePath({
+                    cli: { log: jest.fn() },
+                    config: { servicePath: process.cwd() },
+                    service: {
+                        custom: {
+                            prunePath: {
+                                pathsToKeep: { all: ['./node_modules/library/file3.txt'] },
+                                pathsToDelete: { all: ['./node_modules/library/file3.txt'] }
+                            }
+                        },
+                        functions: {
+                            function1: {}
+                        }
+                    }
+                });
+
+                await expect(plugin.afterPackageFinalize()).rejects.toThrow("Your specific error message here");
+            });
+        });
+
+
     });
 });

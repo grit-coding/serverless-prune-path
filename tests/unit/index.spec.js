@@ -252,7 +252,7 @@ describe('ServerlessPrunePath', () => {
             });
 
             const pathsToKeep = { all: ['path/to/keep/fileToKeep.txt', 'path/to/keep'] };
-            const pathsToDelete = {};
+            const pathsToDelete = undefined;
 
             const result = plugin.validatePaths(pathsToKeep, pathsToDelete);
 
@@ -271,8 +271,6 @@ describe('ServerlessPrunePath', () => {
 
             expect(result).toEqual([]);
         });
-
-
     });
 
     describe('validateConfiguration()', () => {
@@ -405,6 +403,26 @@ describe('ServerlessPrunePath', () => {
 
             expect(() => plugin.validateConfiguration(plugin.serverless.service.custom))
                 .toThrow('Invalid function name(s) in pathsToDelete: invalidFunctionName');
+        });
+
+        it('should throw error when functions are not defined', () => {
+            const plugin = new ServerlessPrunePath({
+                cli: { log: jest.fn() },
+                config: { servicePath: '/servicePath' },
+                service: {
+                    custom: {
+                        prunePath: {
+                            pathsToDelete: {
+                                invalidFunctionName: ['./node_modules/luxon/package.json']
+                            }
+                        }
+                    },
+                    //Note: functions is not defined
+                }
+            });
+
+            expect(() => plugin.validateConfiguration(plugin.serverless.service.custom))
+                .toThrow("No functions found in serverless service functions. Please add at least one function in the 'functions' section of your serverless.yml file.");
         });
 
         it('should throw error when no function is specified in serverless service', () => {

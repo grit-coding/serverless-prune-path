@@ -53,6 +53,10 @@ class ServerlessPrunePath {
       throw new Error("The 'all' keyword in pathsToKeep or pathsToDelete cannot be used alongside specific function paths. Please use 'all' alone or specify individual functions.");
     }
 
+    if (!this.serverless.service.functions) {
+      throw new Error("No functions found in serverless service functions. Please add at least one function in the 'functions' section of your serverless.yml file.")
+    }
+
     let functionNames = Object.keys(this.serverless.service.functions);
 
     if (functionNames.length === 0) {
@@ -82,60 +86,55 @@ class ServerlessPrunePath {
   async afterPackageFinalize() {
     this.serverless.cli.log('Running afterPackageFinalize');
 
-    try {
-      this.validateConfiguration(this.serverless.service.custom);
+    this.validateConfiguration(this.serverless.service.custom);
 
-      const customVariables = this.serverless.service.custom.prunePath;
+    const customVariables = this.serverless.service.custom.prunePath;
 
-      const contradictions = this.validatePaths(customVariables.pathsToKeep, customVariables.pathsToDelete);
-      if (contradictions.length > 0) {
-        throw new Error(`Contradictory paths found: ${contradictions.join(', ')}`);
+    const contradictions = this.validatePaths(customVariables.pathsToKeep, customVariables.pathsToDelete);
+    if (contradictions.length > 0) {
+      throw new Error(`Contradictory paths found: ${contradictions.join(', ')}`);
+    }
+
+
+    //both all
+    const slsPackages = fs.readdirSync(this.servicePath).filter(file => file.endsWith('.zip'));
+
+    for (const singlePackage of slsPackages) {
+
+      const packagePath = path.join(this.servicePath, singlePackage);
+      const unzipDir = path.join(this.servicePath, path.basename(singlePackage, '.zip'));
+
+      const directory = await unzipper.Open.file(packagePath);
+      await directory.extract({ path: unzipDir });
+
+      // Delete the zipped package.
+      fs.unlinkSync(packagePath);
+
+      // Prune the files.
+      if (customVariables.pathsToDelete?.all?.length) {
+        this.deleteListedFiles(customVariables.pathsToDelete.all, unzipDir);
       }
 
-
-      //both all
-      const slsPackages = fs.readdirSync(this.servicePath).filter(file => file.endsWith('.zip'));
-
-      for (const singlePackage of slsPackages) {
-
-        const packagePath = path.join(this.servicePath, singlePackage);
-        const unzipDir = path.join(this.servicePath, path.basename(singlePackage, '.zip'));
-
-        const directory = await unzipper.Open.file(packagePath);
-        await directory.extract({ path: unzipDir });
-
-        // Delete the zipped package.
-        fs.unlinkSync(packagePath);
-
-        // Prune the files.
-        if (customVariables.pathsToDelete?.all?.length) {
-          this.deleteListedFiles(customVariables.pathsToDelete.all, unzipDir);
-        }
-
-        if (customVariables.pathsToKeep?.all?.length) {
-          this.deleteUnlistedFiles(customVariables.pathsToKeep.all, unzipDir);
-        }
-
-        // Re-zip the package.
-        const output = fs.createWriteStream(packagePath);
-        const archive = archiver('zip');
-
-        archive.pipe(output);
-        archive.directory(unzipDir, false);
-        archive.finalize();
-
-        // Use a promise to listen for the close event.
-        await new Promise((resolve, reject) => {
-          output.on('close', resolve);
-          archive.on('error', reject);  // You might want to handle errors too.
-        });
-
-        // Delete the unzipped directory.
-        fs.rmSync(unzipDir, { recursive: true });
+      if (customVariables.pathsToKeep?.all?.length) {
+        this.deleteUnlistedFiles(customVariables.pathsToKeep.all, unzipDir);
       }
-    } catch (error) {
-      this.serverless.cli.log(error);
-      return;
+
+      // Re-zip the package.
+      const output = fs.createWriteStream(packagePath);
+      const archive = archiver('zip');
+
+      archive.pipe(output);
+      archive.directory(unzipDir, false);
+      archive.finalize();
+
+      // Use a promise to listen for the close event.
+      await new Promise((resolve, reject) => {
+        output.on('close', resolve);
+        archive.on('error', reject);  // You might want to handle errors too.
+      });
+
+      // Delete the unzipped directory.
+      fs.rmSync(unzipDir, { recursive: true });
     }
   }
 
