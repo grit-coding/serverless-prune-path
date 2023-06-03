@@ -452,7 +452,8 @@ describe('ServerlessPrunePath plugin', () => {
                                 },
                                 functions: {
                                     function1: {}
-                                }
+                                },
+                                package: { individually: true }
                             }
                         });
 
@@ -510,7 +511,8 @@ describe('ServerlessPrunePath plugin', () => {
                                 },
                                 functions: {
                                     function1: {}
-                                }
+                                },
+                                package: { individually: true }
                             }
                         });
 
@@ -572,7 +574,8 @@ describe('ServerlessPrunePath plugin', () => {
                                 },
                                 functions: {
                                     function1: {}
-                                }
+                                },
+                                package: { individually: true }
                             }
                         });
 
@@ -630,7 +633,8 @@ describe('ServerlessPrunePath plugin', () => {
                                 },
                                 functions: {
                                     function1: {}
-                                }
+                                },
+                                package: { individually: true }
                             }
                         });
 
