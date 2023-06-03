@@ -332,7 +332,6 @@ describe('ServerlessPrunePath plugin', () => {
 
                         const shouldExist = [
                             path.join(packageFullPath, 'node_modules/library/file3.txt'),
-
                             path.join(packageFullPath, 'node_modules/library2/file7.txt'),
                             path.join(packageFullPath, 'node_modules/library2/file8.txt'),
                             path.join(packageFullPath, 'file1.txt'),
