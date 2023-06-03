@@ -150,6 +150,9 @@ class ServerlessPrunePath {
     if (keyWithEmptyValue) {
       throw new Error(`Empty value for key: ${keyWithEmptyValue[0]}`);
     }
+    if (uniqueKeepPaths.includes('/') || uniqueDeletePaths.includes('/') || uniqueKeepPaths.includes('') || uniqueDeletePaths.includes('')) {
+      throw new Error('Empty path or root path is not allowed');
+    }
     const contradictions = [];
 
     // Check contradictions within keep paths

@@ -735,20 +735,29 @@ describe('ServerlessPrunePath plugin', () => {
 
         });
 
-        xdescribe('when paths are invalid', () => {
-            //global path
-            //contradictory within pathsToKeep
-            //contradictory within pathsToKeep and pathsToDelete
-
-            it('should throw an error', async () => {
+        describe('when paths are invalid', () => {
+            it('global path: should throw an error', async () => {
                 const plugin = new ServerlessPrunePath({
                     cli: { log: jest.fn() },
                     config: { servicePath: process.cwd() },
                     service: {
                         custom: {
                             prunePath: {
-                                pathsToKeep: { all: ['./node_modules/library/file3.txt'] },
-                                pathsToDelete: { all: ['./node_modules/library/file3.txt'] }
+                                pathsToDelete: { all: [''] }
+                            }
+                        },
+                        functions: {
+                            function1: {}
+                        }
+                    }
+                });
+                const plugin2 = new ServerlessPrunePath({
+                    cli: { log: jest.fn() },
+                    config: { servicePath: process.cwd() },
+                    service: {
+                        custom: {
+                            prunePath: {
+                                pathsToDelete: { all: ['/'] }
                             }
                         },
                         functions: {
@@ -757,8 +766,51 @@ describe('ServerlessPrunePath plugin', () => {
                     }
                 });
 
-                await expect(plugin.afterPackageFinalize()).rejects.toThrow("Your specific error message here");
+                await expect(plugin.afterPackageFinalize()).rejects.toThrow("Empty path or root path is not allowed");
+                await expect(plugin2.afterPackageFinalize()).rejects.toThrow("Empty path or root path is not allowed");
             });
+
+            it('contradiction within pathsToKeep: should throw an error', async () => {
+                const plugin = new ServerlessPrunePath({
+                    cli: { log: jest.fn() },
+                    config: { servicePath: process.cwd() },
+                    service: {
+                        custom: {
+                            prunePath: {
+                                pathsToKeep: { all: ['path/to/keep', 'path/to/keep/file1.txt'] }
+                            }
+                        },
+                        functions: {
+                            function1: {}
+                        }
+                    }
+                });
+
+                await expect(plugin.afterPackageFinalize()).rejects.toThrow("Contradictory paths found: Keep: \"path/to/keep\", Keep: \"path/to/keep/file1.txt\"");
+
+            });
+
+            it('contradiction from pathsToKeep and pathsToDelete: should throw an error', async () => {
+                const plugin = new ServerlessPrunePath({
+                    cli: { log: jest.fn() },
+                    config: { servicePath: process.cwd() },
+                    service: {
+                        custom: {
+                            prunePath: {
+                                pathsToKeep: { all: ['path/file1.txt'] },
+                                pathsToDelete: { all: ['path/file1.txt'] }
+                            }
+                        },
+                        functions: {
+                            function1: {}
+                        }
+                    }
+                });
+
+                await expect(plugin.afterPackageFinalize()).rejects.toThrow("Contradictory paths found: Keep: \"path/file1.txt\", Delete: \"path/file1.txt\"");
+
+            });
+
         });
 
 
