@@ -38,21 +38,28 @@ async function createZipFile(directory, zipPath) {
 // helper function to unzip a file to a given path
 async function unzipFile(zipPath, destinationPath) {
     const directory = await unzipper.Open.file(zipPath);
+    const basePath = path.resolve(process.cwd(), path.dirname(zipPath));
+
     await Promise.all(directory.files.map(async file => {
-        const fullPath = path.join(destinationPath, file.path);
+        let filePath = file.path;
+
+        // Remove the shared initial substring between filePath and basePath
+        if (filePath.startsWith(basePath)) {
+            filePath = filePath.substring(basePath.length);
+        }
+
+        const fullPath = path.join(destinationPath, filePath);
         const directoryName = path.dirname(fullPath);
+
         if (!fs.existsSync(directoryName)) {
             fs.mkdirSync(directoryName, { recursive: true });
         }
 
-        // Check if file.path is a directory
         if (file.type === 'Directory') {
-            // If it's a directory, create it if it doesn't already exist
             if (!fs.existsSync(fullPath)) {
                 fs.mkdirSync(fullPath, { recursive: true });
             }
         } else {
-            // If it's a file, create a file stream for it
             await pipeline(
                 file.stream(),
                 fs.createWriteStream(fullPath)
@@ -60,6 +67,8 @@ async function unzipFile(zipPath, destinationPath) {
         }
     }));
 }
+
+
 
 async function createZippedFileStructure(zipPath, fileStructure) {
     // Create the file structure in a temporary directory
@@ -84,7 +93,7 @@ function deleteDirectory(directoryPath) {
 }
 describe('ServerlessPrunePath plugin', () => {
     afterEach(() => {
-        deleteDirectory(path.join(process.cwd(), '.serverless'));
+        // deleteDirectory(path.join(process.cwd(), '.serverless'));
     });
     let currentDirectory = process.cwd();
     describe('Successful scenarios', () => {
@@ -130,16 +139,30 @@ describe('ServerlessPrunePath plugin', () => {
                         let packageFullPath = path.join(currentDirectory, packageDirectory);
                         await unzipFile(path.join(currentDirectory, '.serverless/package.zip'), path.join(currentDirectory, packageDirectory));
                         expect(fs.existsSync(path.join(currentDirectory, '.serverless/package.zip'))).toBeTruthy();
-                        expect(fs.existsSync(path.join(packageFullPath, 'node_modules/library/file3.txt'))).toBeTruthy();
-                        expect(fs.existsSync(path.join(packageFullPath, 'node_modules/library/file4.txt'))).toBeFalsy();
-                        expect(fs.existsSync(path.join(packageFullPath, 'node_modules/library/file5.txt'))).toBeFalsy();
-                        expect(fs.existsSync(path.join(packageFullPath, 'node_modules/library2/file6.txt'))).toBeTruthy();
-                        expect(fs.existsSync(path.join(packageFullPath, 'node_modules/library2/file7.txt'))).toBeTruthy();
-                        expect(fs.existsSync(path.join(packageFullPath, 'node_modules/library2/file8.txt'))).toBeTruthy();
-                        expect(fs.existsSync(path.join(packageFullPath, 'file1.txt'))).toBeTruthy();
-                        expect(fs.existsSync(path.join(packageFullPath, 'node_modules/file2.txt'))).toBeTruthy();
 
+                        const shouldExist = [
+                            path.join(packageFullPath, 'node_modules/library/file3.txt'),
+                            path.join(packageFullPath, 'node_modules/library2/file6.txt'),
+                            path.join(packageFullPath, 'node_modules/library2/file7.txt'),
+                            path.join(packageFullPath, 'node_modules/library2/file8.txt'),
+                            path.join(packageFullPath, 'file1.txt'),
+                            path.join(packageFullPath, 'node_modules/file2.txt'),
+                        ];
+
+                        const shouldNotExist = [
+                            path.join(packageFullPath, 'node_modules/library/file4.txt'),
+                            path.join(packageFullPath, 'node_modules/library/file5.txt'),
+                        ];
+
+                        shouldExist.forEach(filePath => {
+                            expect(fs.existsSync(filePath)).toBeTruthy();
+                        });
+
+                        shouldNotExist.forEach(filePath => {
+                            expect(fs.existsSync(filePath)).toBeFalsy();
+                        });
                     });
+
                     it('should keep the specified paths and remove all other unlisted files in the same directory of the given path', async () => {
                         const plugin = new ServerlessPrunePath({
                             cli: { log: jest.fn() },
@@ -161,16 +184,30 @@ describe('ServerlessPrunePath plugin', () => {
                         let packageFullPath = path.join(currentDirectory, packageDirectory);
                         await unzipFile(path.join(currentDirectory, '.serverless/package.zip'), path.join(currentDirectory, packageDirectory));
                         expect(fs.existsSync(path.join(currentDirectory, '.serverless/package.zip'))).toBeTruthy();
-                        expect(fs.existsSync(path.join(packageFullPath, 'node_modules/library/file3.txt'))).toBeTruthy();
-                        expect(fs.existsSync(path.join(packageFullPath, 'node_modules/library/file4.txt'))).toBeFalsy();
-                        expect(fs.existsSync(path.join(packageFullPath, 'node_modules/library/file5.txt'))).toBeFalsy();
-                        expect(fs.existsSync(path.join(packageFullPath, 'node_modules/library2/file6.txt'))).toBeTruthy();
-                        expect(fs.existsSync(path.join(packageFullPath, 'node_modules/library2/file7.txt'))).toBeFalsy();
-                        expect(fs.existsSync(path.join(packageFullPath, 'node_modules/library2/file8.txt'))).toBeFalsy();
-                        expect(fs.existsSync(path.join(packageFullPath, 'file1.txt'))).toBeTruthy();
-                        expect(fs.existsSync(path.join(packageFullPath, 'node_modules/file2.txt'))).toBeTruthy();
 
+                        const shouldExist = [
+                            path.join(packageFullPath, 'node_modules/library/file3.txt'),
+                            path.join(packageFullPath, 'node_modules/library2/file6.txt'),
+                            path.join(packageFullPath, 'file1.txt'),
+                            path.join(packageFullPath, 'node_modules/file2.txt'),
+                        ];
+
+                        const shouldNotExist = [
+                            path.join(packageFullPath, 'node_modules/library/file4.txt'),
+                            path.join(packageFullPath, 'node_modules/library/file5.txt'),
+                            path.join(packageFullPath, 'node_modules/library2/file7.txt'),
+                            path.join(packageFullPath, 'node_modules/library2/file8.txt'),
+                        ];
+
+                        shouldExist.forEach(filePath => {
+                            expect(fs.existsSync(filePath)).toBeTruthy();
+                        });
+
+                        shouldNotExist.forEach(filePath => {
+                            expect(fs.existsSync(filePath)).toBeFalsy();
+                        });
                     });
+
                 });
             });
             describe('config: pathsToDelete', () => {
@@ -196,15 +233,30 @@ describe('ServerlessPrunePath plugin', () => {
                         let packageFullPath = path.join(currentDirectory, packageDirectory);
                         await unzipFile(path.join(currentDirectory, '.serverless/package.zip'), path.join(currentDirectory, packageDirectory));
                         expect(fs.existsSync(path.join(currentDirectory, '.serverless/package.zip'))).toBeTruthy();
-                        expect(fs.existsSync(path.join(packageFullPath, 'node_modules/library/file3.txt'))).toBeFalsy();
-                        expect(fs.existsSync(path.join(packageFullPath, 'node_modules/library/file4.txt'))).toBeTruthy();
-                        expect(fs.existsSync(path.join(packageFullPath, 'node_modules/library/file5.txt'))).toBeTruthy();
-                        expect(fs.existsSync(path.join(packageFullPath, 'node_modules/library2/file6.txt'))).toBeTruthy();
-                        expect(fs.existsSync(path.join(packageFullPath, 'node_modules/library2/file7.txt'))).toBeTruthy();
-                        expect(fs.existsSync(path.join(packageFullPath, 'node_modules/library2/file8.txt'))).toBeTruthy();
-                        expect(fs.existsSync(path.join(packageFullPath, 'file1.txt'))).toBeTruthy();
-                        expect(fs.existsSync(path.join(packageFullPath, 'node_modules/file2.txt'))).toBeTruthy();
+
+                        const shouldExist = [
+                            path.join(packageFullPath, 'node_modules/library/file4.txt'),
+                            path.join(packageFullPath, 'node_modules/library/file5.txt'),
+                            path.join(packageFullPath, 'node_modules/library2/file6.txt'),
+                            path.join(packageFullPath, 'node_modules/library2/file7.txt'),
+                            path.join(packageFullPath, 'node_modules/library2/file8.txt'),
+                            path.join(packageFullPath, 'file1.txt'),
+                            path.join(packageFullPath, 'node_modules/file2.txt'),
+                        ];
+
+                        const shouldNotExist = [
+                            path.join(packageFullPath, 'node_modules/library/file3.txt'),
+                        ];
+
+                        shouldExist.forEach(filePath => {
+                            expect(fs.existsSync(filePath)).toBeTruthy();
+                        });
+
+                        shouldNotExist.forEach(filePath => {
+                            expect(fs.existsSync(filePath)).toBeFalsy();
+                        });
                     });
+
                     it('should remove the specified paths and keep all other files in the same directory of the given path', async () => {
                         const plugin = new ServerlessPrunePath({
                             cli: { log: jest.fn() },
@@ -226,19 +278,34 @@ describe('ServerlessPrunePath plugin', () => {
                         let packageFullPath = path.join(currentDirectory, packageDirectory);
                         await unzipFile(path.join(currentDirectory, '.serverless/package.zip'), path.join(currentDirectory, packageDirectory));
                         expect(fs.existsSync(path.join(currentDirectory, '.serverless/package.zip'))).toBeTruthy();
-                        expect(fs.existsSync(path.join(packageFullPath, 'node_modules/library/file3.txt'))).toBeFalsy();
-                        expect(fs.existsSync(path.join(packageFullPath, 'node_modules/library/file4.txt'))).toBeTruthy();
-                        expect(fs.existsSync(path.join(packageFullPath, 'node_modules/library/file5.txt'))).toBeTruthy();
-                        expect(fs.existsSync(path.join(packageFullPath, 'node_modules/library2/file6.txt'))).toBeTruthy();
-                        expect(fs.existsSync(path.join(packageFullPath, 'node_modules/library2/file7.txt'))).toBeTruthy();
-                        expect(fs.existsSync(path.join(packageFullPath, 'node_modules/library2/file8.txt'))).toBeTruthy();
-                        expect(fs.existsSync(path.join(packageFullPath, 'file1.txt'))).toBeFalsy();
-                        expect(fs.existsSync(path.join(packageFullPath, 'node_modules/file2.txt'))).toBeFalsy();
+
+                        const shouldExist = [
+                            path.join(packageFullPath, 'node_modules/library/file4.txt'),
+                            path.join(packageFullPath, 'node_modules/library/file5.txt'),
+                            path.join(packageFullPath, 'node_modules/library2/file6.txt'),
+                            path.join(packageFullPath, 'node_modules/library2/file7.txt'),
+                            path.join(packageFullPath, 'node_modules/library2/file8.txt'),
+                        ];
+
+                        const shouldNotExist = [
+                            path.join(packageFullPath, 'node_modules/library/file3.txt'),
+                            path.join(packageFullPath, 'file1.txt'),
+                            path.join(packageFullPath, 'node_modules/file2.txt'),
+                        ];
+
+                        shouldExist.forEach(filePath => {
+                            expect(fs.existsSync(filePath)).toBeTruthy();
+                        });
+
+                        shouldNotExist.forEach(filePath => {
+                            expect(fs.existsSync(filePath)).toBeFalsy();
+                        });
                     });
+
                 });
             });
         });
-        xdescribe('when lambda functions are individually packed', () => {
+        describe('when lambda functions are individually packed', () => {
             beforeEach(async () => {
                 await createZippedFileStructure('.serverless/function1.zip', {
                     'file1.txt': 'file1 content',
@@ -292,32 +359,48 @@ describe('ServerlessPrunePath plugin', () => {
                         });
 
                         await plugin.afterPackageFinalize();
-                        let function1Directory = path.join(currentDirectory, '.serverless/function1');
-                        let function2Directory = path.join(currentDirectory, '.serverless/function2');
-                        const function1FullPath = path.join(currentDirectory, function1Directory);
-                        const function2FullPath = path.join(currentDirectory, function2Directory);
-                        await unzipFile(path.join(currentDirectory, '.serverless/function1.zip'), path.join(currentDirectory, function1Directory));
-                        // await unzipFile(path.join(currentDirectory, '.serverless/function2.zip'), path.join(currentDirectory, function2Directory));
-                        // expect(fs.existsSync(path.join(currentDirectory, '.serverless/function1.zip'))).toBeTruthy();
-                        // expect(fs.existsSync(path.join(currentDirectory, '.serverless/function2.zip'))).toBeTruthy();
-                        // expect(fs.existsSync(path.join(function1FullPath, 'node_modules/library/file3.txt'))).toBeTruthy();
-                        // expect(fs.existsSync(path.join(function2FullPath, 'node_modules/library/file3.txt'))).toBeTruthy();
-                        // expect(fs.existsSync(path.join(function1FullPath, 'node_modules/library/file4.txt'))).toBeFalsy();
-                        // expect(fs.existsSync(path.join(function2FullPath, 'node_modules/library/file4.txt'))).toBeFalsy();
-                        // expect(fs.existsSync(path.join(function1FullPath, 'node_modules/library/file5.txt'))).toBeFalsy();
-                        // expect(fs.existsSync(path.join(function2FullPath, 'node_modules/library/file5.txt'))).toBeFalsy();
-                        // expect(fs.existsSync(path.join(function1FullPath, 'node_modules/library2/file6.txt'))).toBeTruthy();
-                        // expect(fs.existsSync(path.join(function2FullPath, 'node_modules/library2/file6.txt'))).toBeTruthy();
-                        // expect(fs.existsSync(path.join(function1FullPath, 'node_modules/library2/file7.txt'))).toBeTruthy();
-                        // expect(fs.existsSync(path.join(function2FullPath, 'node_modules/library2/file7.txt'))).toBeTruthy();
-                        // expect(fs.existsSync(path.join(function1FullPath, 'node_modules/library2/file8.txt'))).toBeTruthy();
-                        // expect(fs.existsSync(path.join(function2FullPath, 'node_modules/library2/file8.txt'))).toBeTruthy();
-                        // expect(fs.existsSync(path.join(function1FullPath, 'file1.txt'))).toBeTruthy();
-                        // expect(fs.existsSync(path.join(function2FullPath, 'file1.txt'))).toBeTruthy();
-                        // expect(fs.existsSync(path.join(function1FullPath, 'node_modules/file2.txt'))).toBeTruthy();
-                        // expect(fs.existsSync(path.join(function2FullPath, 'node_modules/file2.txt'))).toBeTruthy();
 
+                        let function1Directory = path.join('.serverless', 'function1');
+                        let function2Directory = path.join('.serverless', 'function2');
+                        const function1UnzipPath = path.join(currentDirectory, function1Directory);
+                        const function2UnzipPath = path.join(currentDirectory, function2Directory);
+
+                        await unzipFile(path.join(currentDirectory, '.serverless', 'function1.zip'), function1UnzipPath);
+                        await unzipFile(path.join(currentDirectory, '.serverless', 'function2.zip'), function2UnzipPath);
+
+                        const shouldExist = [
+                            path.join(currentDirectory, '.serverless/function1.zip'),
+                            path.join(currentDirectory, '.serverless/function2.zip'),
+                            path.join(function1UnzipPath, 'node_modules/library/file3.txt'),
+                            path.join(function2UnzipPath, 'node_modules/library/file3.txt'),
+                            path.join(function1UnzipPath, 'node_modules/library2/file6.txt'),
+                            path.join(function2UnzipPath, 'node_modules/library2/file6.txt'),
+                            path.join(function1UnzipPath, 'node_modules/library2/file7.txt'),
+                            path.join(function2UnzipPath, 'node_modules/library2/file7.txt'),
+                            path.join(function1UnzipPath, 'node_modules/library2/file8.txt'),
+                            path.join(function2UnzipPath, 'node_modules/library2/file8.txt'),
+                            path.join(function1UnzipPath, 'file1.txt'),
+                            path.join(function2UnzipPath, 'file1.txt'),
+                            path.join(function1UnzipPath, 'node_modules/file2.txt'),
+                            path.join(function2UnzipPath, 'node_modules/file2.txt'),
+                        ];
+
+                        const shouldNotExist = [
+                            path.join(function1UnzipPath, 'node_modules/library/file4.txt'),
+                            path.join(function2UnzipPath, 'node_modules/library/file4.txt'),
+                            path.join(function1UnzipPath, 'node_modules/library/file5.txt'),
+                            path.join(function2UnzipPath, 'node_modules/library/file5.txt'),
+                        ];
+
+                        shouldExist.forEach(filePath => {
+                            expect(fs.existsSync(filePath)).toBeTruthy();
+                        });
+
+                        shouldNotExist.forEach(filePath => {
+                            expect(fs.existsSync(filePath)).toBeFalsy();
+                        });
                     });
+
                 });
             });
             describe('config: pathsToDelete', () => {
