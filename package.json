@@ -6,6 +6,10 @@
   "files": [
     "src/index.js"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/grit-coding/serverless-prune-path"
+  },
   "scripts": {
     "unit-test": "jest unit --verbose",
     "integration-test": "jest integration --verbose",
