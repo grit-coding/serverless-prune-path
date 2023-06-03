@@ -305,6 +305,104 @@ describe('ServerlessPrunePath plugin', () => {
 
                 });
             });
+            describe('config: pathsToKeep && pathsToDelete', () => {
+                describe('all', () => {
+                    it('should keep the specified path and remove all other unlisted files in the same directory of the given path also remove the specified path and keep all other files in the same directory of the given path ', async () => {
+                        const plugin = new ServerlessPrunePath({
+                            cli: { log: jest.fn() },
+                            config: { servicePath: process.cwd() },
+                            service: {
+                                custom: {
+                                    prunePath: {
+                                        pathsToKeep: { all: ['./node_modules/library/file3.txt'] },
+                                        pathsToDelete: { all: ['./node_modules/library2/file6.txt'] }
+                                    }
+                                },
+                                functions: {
+                                    function1: {}
+                                }
+                            }
+                        });
+
+                        await plugin.afterPackageFinalize();
+                        let packageDirectory = '.serverless/package';
+                        let packageFullPath = path.join(currentDirectory, packageDirectory);
+                        await unzipFile(path.join(currentDirectory, '.serverless/package.zip'), path.join(currentDirectory, packageDirectory));
+                        expect(fs.existsSync(path.join(currentDirectory, '.serverless/package.zip'))).toBeTruthy();
+
+                        const shouldExist = [
+                            path.join(packageFullPath, 'node_modules/library/file3.txt'),
+
+                            path.join(packageFullPath, 'node_modules/library2/file7.txt'),
+                            path.join(packageFullPath, 'node_modules/library2/file8.txt'),
+                            path.join(packageFullPath, 'file1.txt'),
+                            path.join(packageFullPath, 'node_modules/file2.txt'),
+                        ];
+
+                        const shouldNotExist = [
+                            path.join(packageFullPath, 'node_modules/library/file4.txt'),
+                            path.join(packageFullPath, 'node_modules/library/file5.txt'),
+                            path.join(packageFullPath, 'node_modules/library2/file6.txt'),
+
+                        ];
+
+                        shouldExist.forEach(filePath => {
+                            expect(fs.existsSync(filePath)).toBeTruthy();
+                        });
+
+                        shouldNotExist.forEach(filePath => {
+                            expect(fs.existsSync(filePath)).toBeFalsy();
+                        });
+                    });
+
+                    it('should keep the specified paths and remove all other unlisted files in the same directory of the given path also remove the specified paths and keep all other files in the same directory of the given path ', async () => {
+                        const plugin = new ServerlessPrunePath({
+                            cli: { log: jest.fn() },
+                            config: { servicePath: process.cwd() },
+                            service: {
+                                custom: {
+                                    prunePath: {
+                                        pathsToKeep: { all: ['./node_modules/library/file3.txt', './node_modules/library2/file6.txt'] },
+                                        pathsToDelete: { all: ['node_modules/file2.txt', 'file1.txt'] }
+                                    }
+                                },
+                                functions: {
+                                    function1: {}
+                                }
+                            }
+                        });
+
+                        await plugin.afterPackageFinalize();
+                        let packageDirectory = '.serverless/package';
+                        let packageFullPath = path.join(currentDirectory, packageDirectory);
+                        await unzipFile(path.join(currentDirectory, '.serverless/package.zip'), path.join(currentDirectory, packageDirectory));
+                        expect(fs.existsSync(path.join(currentDirectory, '.serverless/package.zip'))).toBeTruthy();
+
+                        const shouldExist = [
+                            path.join(packageFullPath, 'node_modules/library/file3.txt'),
+                            path.join(packageFullPath, 'node_modules/library2/file6.txt'),
+                        ];
+
+                        const shouldNotExist = [
+                            path.join(packageFullPath, 'node_modules/library/file4.txt'),
+                            path.join(packageFullPath, 'node_modules/library/file5.txt'),
+                            path.join(packageFullPath, 'node_modules/library2/file7.txt'),
+                            path.join(packageFullPath, 'node_modules/library2/file8.txt'),
+                            path.join(packageFullPath, 'node_modules/file2.txt'),
+                            path.join(packageFullPath, 'file1.txt'),
+                        ];
+
+                        shouldExist.forEach(filePath => {
+                            expect(fs.existsSync(filePath)).toBeTruthy();
+                        });
+
+                        shouldNotExist.forEach(filePath => {
+                            expect(fs.existsSync(filePath)).toBeFalsy();
+                        });
+                    });
+
+                });
+            });
         });
         describe('when lambda functions are individually packed', () => {
             beforeEach(async () => {
@@ -790,7 +888,7 @@ describe('ServerlessPrunePath plugin', () => {
 
             });
 
-            it('contradiction from pathsToKeep and pathsToDelete: should throw an error', async () => {
+            it('contradiction file path from pathsToKeep and pathsToDelete: should throw an error', async () => {
                 const plugin = new ServerlessPrunePath({
                     cli: { log: jest.fn() },
                     config: { servicePath: process.cwd() },
@@ -808,6 +906,27 @@ describe('ServerlessPrunePath plugin', () => {
                 });
 
                 await expect(plugin.afterPackageFinalize()).rejects.toThrow("Contradictory paths found: Keep: \"path/file1.txt\", Delete: \"path/file1.txt\"");
+
+            });
+
+            it('contradiction file path and directory from pathsToKeep and pathsToDelete: should throw an error', async () => {
+                const plugin = new ServerlessPrunePath({
+                    cli: { log: jest.fn() },
+                    config: { servicePath: process.cwd() },
+                    service: {
+                        custom: {
+                            prunePath: {
+                                pathsToKeep: { all: ['path/file1.txt'] },
+                                pathsToDelete: { all: ['path'] }
+                            }
+                        },
+                        functions: {
+                            function1: {}
+                        }
+                    }
+                });
+
+                await expect(plugin.afterPackageFinalize()).rejects.toThrow("Contradictory paths found: Keep: \"path/file1.txt\", Delete: \"path\"");
 
             });
 
