@@ -8,6 +8,17 @@ The plugin works by first unpacking the Lambda package, pruning paths according 
 
 This can be particularly useful when your project has dependencies or files that are not needed in the production environment, allowing you to reduce the size of your deployment package and ultimately the cold start time of your Lambda functions.
 
+## Prerequisites
+Before using the serverless-prune-path plugin, make sure you have an existing Serverless project set up and Serverless Framework installed.
+
+If you don't have the Serverless Framework installed, you can do so by running:
+
+```bash
+Copy code
+npm install -g serverless
+```
+For more details on setting up a Serverless project and installing the Serverless Framework, please refer to the [Serverless Framework Getting Started Guide](https://www.serverless.com/framework/docs/tutorial).
+
 ## How to Use
 
 ### Installation
