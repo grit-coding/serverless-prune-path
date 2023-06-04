@@ -8,7 +8,6 @@ Serverless Prune Path 플러그인은 패키지를 선택적으로 정리하여 
 
 이는 프로젝트에 프로덕션 환경에서 필요하지 않은 의존성이나 파일이 있는 경우에 특히 유용하여, 배포 패키지의 크기를 줄이고 결국에는 Lambda 함수의 Cold Start 시간을 줄일 수 있습니다.
 </br>
-</br>
 
 ## 사전 준비 사항
 serverless-prune-path 플러그인을 사용하기 전에 Serverless 프로젝트가 이미 설정되어 있고 Serverless Framework가 설치되어 있는지 확인하세요.
@@ -20,7 +19,6 @@ npm install -g serverless
 ```
 
 자세한 설치 및 설정 방법은 [Serverless Framework 시작하기](https://www.serverless.com/framework/docs/tutorial)를 참조하세요.
-</br>
 </br>
 
 ## 사용 방법
@@ -59,7 +57,6 @@ custom:
 
  정리하는 기능은 향후 릴리스에 계획되어 있습니다.
 </br>
-</br>
 
 ### 예시
 
@@ -73,7 +70,6 @@ custom:
 ```
 
 이 예시에서, 'node_modules'와 'handler.js'는 모든 람다 패키지에서 유지될 유일한 경로가 됩니다. 패키지에서 다른 모든 파일 및 디렉토리는 제거됩니다.
-</br>
 </br>
 
 마찬가지로, `pathsToDelete` 아래에서 'all'을 사용하면, 지정된 경로가 모든 람다 패키지에서 삭제됩니다.
@@ -90,7 +86,6 @@ custom:
 
 주의: 잘못된 설정으로 인해 필요한 파일이 삭제될 수 있으며, 이로 인해 Lambda 함수가 실패할 수 있습니다.
 </br>
-</br>
 
 ### Prune 테스트
 
@@ -98,11 +93,10 @@ prune path의 결과를 확인하려면 아래의 명령어를 실행하고 pack
 ```bash
 serverless package
 ```
-결과에 만족하고 배포하고 싶다면 
+결과에 만족하고 배포하고 싶다면 다음 명령어를 입력하세요.
 ```bash
 serverless deploy
 ```
-</br>
 </br>
 
 ## 향후 작업
