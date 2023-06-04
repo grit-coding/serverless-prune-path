@@ -6,9 +6,22 @@
   "files": [
     "src/index.js"
   ],
+  "author": "Narae",
+  "license": "ISC",
   "repository": {
     "type": "git",
     "url": "https://github.com/grit-coding/serverless-prune-path"
+  },
+  "jest": {
+    "collectCoverage": true,
+    "collectCoverageFrom": [
+      "./tests/**"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "lines": 97
+      }
+    }
   },
   "scripts": {
     "unit-test": "jest unit --verbose",
@@ -23,8 +36,6 @@
     "packaging-pruning",
     "serverless-pruning"
   ],
-  "author": "Narae",
-  "license": "ISC",
   "peerDependencies": {
     "serverless": "^3.0.0"
   },
