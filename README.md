@@ -16,7 +16,6 @@ Before using the serverless-prune-path plugin, make sure you have an existing Se
 If you don't have the Serverless Framework installed, you can do so by running:
 
 ```bash
-Copy code
 npm install -g serverless
 ```
 For more details on setting up a Serverless project and installing the Serverless Framework, please refer to the [Serverless Framework Getting Started Guide](https://www.serverless.com/framework/docs/tutorial).
@@ -31,7 +30,6 @@ Install the plugin via npm:
 npm install --save-dev serverless-prune-path
 ```
 </br>
-
 
 ### Configuration
 
