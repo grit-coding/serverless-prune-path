@@ -61,7 +61,7 @@ In this version, only the 'all' configuration is available for specifying the sc
 </br>
 </br>
 
-## Example
+### Example
 
 ```yaml
 custom:
@@ -92,7 +92,7 @@ Please note: Incorrect configuration may lead to the deletion of necessary files
 </br>
 </br>
 
-## Prune Test
+### Prune Test
 
 If you want to check the result of prune path, run the below command and check the packed lambda.
 ```bash
