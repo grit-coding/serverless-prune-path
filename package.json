@@ -1,6 +1,6 @@
 {
   "name": "serverless-prune-path",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "A Serverless Framework plugin designed to manage and optimize the file paths included in deployment packages. It allows users to specify which paths should be kept or removed, offering granular control over the package's contents, which can result in smaller deployment sizes and more efficient executions.",
   "main": "src/index.js",
   "files": [
