@@ -1,5 +1,4 @@
-function validateConfiguration(service) {
-    const { custom, functions } = service;
+function validateConfiguration(custom, functions) {
     // Check if prunePath exists
     if (!custom || Object.keys(custom).includes('prunePath') === false) {
         throw new Error("prunePath configuration is missing from custom");

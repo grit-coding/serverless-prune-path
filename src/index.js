@@ -19,7 +19,7 @@ class ServerlessPrunePath {
   async afterPackageFinalize() {
     this.serverless.cli.log('Serverless-prune-path plugin is running: after package finalization stage.');
 
-    validateConfiguration(this.serverless.service);
+    validateConfiguration(this.serverless.service.custom, this.serverless.service.functions);
 
     const customVariables = this.serverless.service.custom.prunePath;
 
