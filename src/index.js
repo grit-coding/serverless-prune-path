@@ -3,6 +3,8 @@ const path = require('path');
 const fs = require('fs');
 const unzipper = require('unzipper');
 const archiver = require('archiver');
+const validatePaths = require('./validators/paths');
+const validateConfiguration = require('./validators/configuration');
 
 class ServerlessPrunePath {
 
@@ -14,85 +16,14 @@ class ServerlessPrunePath {
     };
   }
 
-  validateConfiguration(custom) {
-    // Check if prunePath exists
-    if (!custom || Object.keys(custom).includes('prunePath') === false) {
-      throw new Error("prunePath configuration is missing from custom");
-    }
-
-    // Check if at least one of pathsToKeep or pathsToDelete exists
-    if (!Object.keys(custom.prunePath).length || (!custom.prunePath.pathsToKeep && !custom.prunePath.pathsToDelete)) {
-      throw new Error("At least one of pathsToKeep or pathsToDelete must exist in prunePath");
-    }
-
-    // Check for invalid keys
-    const validKeys = ["pathsToKeep", "pathsToDelete"];
-    const prunePathKeys = Object.keys(custom.prunePath);
-    const invalidKeys = prunePathKeys.filter(key => !validKeys.includes(key));
-
-    if (invalidKeys.length > 0) {
-      throw new Error(`Invalid key(s) in prunePath: ${invalidKeys.join(", ")}`);
-    }
-
-
-    let pathsToKeepKeys = [];
-    let pathsToDeleteKeys = [];
-    if (custom.prunePath.pathsToKeep) {
-      pathsToKeepKeys = Object.keys(custom.prunePath.pathsToKeep);
-    }
-    if (custom.prunePath.pathsToDelete) {
-      pathsToDeleteKeys = Object.keys(custom.prunePath.pathsToDelete);
-    }
-
-    if (Array.isArray(custom.prunePath.pathsToKeep) || Array.isArray(custom.prunePath.pathsToDelete)) {
-      throw new Error("pathsToKeep and pathsToDelete must contain the keyword \"all\""); //todo change next version
-
-    }
-    const keepAllWithFunc = pathsToKeepKeys.includes('all') && pathsToKeepKeys.length > 1;
-    const deleteAllWithFunc = pathsToDeleteKeys.includes('all') && pathsToDeleteKeys.length > 1;
-
-    if (keepAllWithFunc || deleteAllWithFunc) {
-      throw new Error("The 'all' keyword in pathsToKeep or pathsToDelete cannot be used alongside specific function paths. Please use 'all' alone or specify individual functions.");
-    }
-
-    if (!this.serverless.service.functions) {
-      throw new Error("No functions found in serverless service functions. Please add at least one function in the 'functions' section of your serverless.yml file.")
-    }
-
-    let functionNames = Object.keys(this.serverless.service.functions);
-
-    if (functionNames.length === 0) {
-      throw new Error("No functions found in serverless service functions. Please add at least one function in the 'functions' section of your serverless.yml file.");
-    }
-
-    let invalidFunctionNamesInKeep = pathsToKeepKeys.filter(
-      functionName => !functionNames.includes(functionName) && functionName !== 'all'
-    );
-    let invalidFunctionNamesInDelete = pathsToDeleteKeys.filter(
-      functionName => !functionNames.includes(functionName) && functionName !== 'all'
-    );
-
-    if (invalidFunctionNamesInKeep.length > 0) {
-      throw new Error(`Invalid function name(s) in pathsToKeep: ${invalidFunctionNamesInKeep.join(", ")}`);
-    }
-
-    if (invalidFunctionNamesInDelete.length > 0) {
-      throw new Error(`Invalid function name(s) in pathsToDelete: ${invalidFunctionNamesInDelete.join(", ")}`);
-    }
-
-  }
-
-
-
-
   async afterPackageFinalize() {
     this.serverless.cli.log('Serverless-prune-path plugin is running: after package finalization stage.');
 
-    this.validateConfiguration(this.serverless.service.custom);
+    validateConfiguration(this.serverless.service);
 
     const customVariables = this.serverless.service.custom.prunePath;
 
-    const contradictions = this.validatePaths(customVariables.pathsToKeep, customVariables.pathsToDelete);
+    const contradictions = validatePaths(customVariables.pathsToKeep, customVariables.pathsToDelete);
     if (contradictions.length > 0) {
       throw new Error(`Contradictory paths found: ${contradictions.join(', ')}`);
     }
@@ -139,46 +70,6 @@ class ServerlessPrunePath {
       fs.rmSync(unzipDir, { recursive: true });
     }
   }
-
-
-
-  validatePaths(pathsToKeep = {}, pathsToDelete = {}) {
-
-    const uniqueKeepPaths = [...new Set(Object.values(pathsToKeep).flat())];
-    const uniqueDeletePaths = [...new Set(Object.values(pathsToDelete).flat())];
-    const keyWithEmptyValue = Object.entries(pathsToKeep).find(([key, value]) => !!key && value.length === 0) || Object.entries(pathsToDelete).find(([key, value]) => !!key && value.length === 0);
-    if (keyWithEmptyValue) {
-      throw new Error(`Empty value for key: ${keyWithEmptyValue[0]}`);
-    }
-    if (uniqueKeepPaths.includes('/') || uniqueDeletePaths.includes('/') || uniqueKeepPaths.includes('') || uniqueDeletePaths.includes('')) {
-      throw new Error('Empty path or root path is not allowed');
-    }
-    const contradictions = [];
-
-    // Check contradictions within keep paths
-    uniqueKeepPaths.forEach((keepPath, i) => {
-      uniqueKeepPaths.slice(i + 1).forEach(otherKeepPath => {
-        if (otherKeepPath.startsWith(keepPath) || keepPath.startsWith(otherKeepPath)) {
-          contradictions.push(`Keep: "${keepPath}", Keep: "${otherKeepPath}"`);
-        }
-      });
-    });
-
-    // Check contradictions between keep paths and delete paths
-    uniqueKeepPaths.forEach(keepPath => {
-      uniqueDeletePaths.forEach(deletePath => {
-        if (keepPath.startsWith(deletePath)) {
-          contradictions.push(`Keep: "${keepPath}", Delete: "${deletePath}"`);
-        }
-      });
-    });
-
-    return contradictions;
-  }
-
-
-
-
 
   deleteUnlistedFiles(pathsToKeep, unzipDir) {
     const keepFilesSet = new Set(pathsToKeep.map(filePath => path.join(unzipDir, filePath)));
@@ -227,9 +118,6 @@ class ServerlessPrunePath {
       });
     });
   }
-
-
-
 
   deleteListedFiles(pathsToDelete, unzipDir) {
     pathsToDelete.forEach((deletePath) => {
