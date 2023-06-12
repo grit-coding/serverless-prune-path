@@ -1,7 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 
-function deleteListedFiles(pathsToDelete, unzipDir, serverless) {
+function processPathsToDelete(pathsToDelete, unzipDir, serverless) {
     pathsToDelete.forEach((deletePath) => {
         const fullPath = path.join(unzipDir, deletePath);
 
@@ -21,4 +21,4 @@ function deleteListedFiles(pathsToDelete, unzipDir, serverless) {
     });
 }
 
-module.exports = deleteListedFiles;
+module.exports = processPathsToDelete;

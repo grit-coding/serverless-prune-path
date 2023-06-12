@@ -5,8 +5,8 @@ const unzipper = require('unzipper');
 const archiver = require('archiver');
 const validatePaths = require('./validators/paths');
 const validateConfiguration = require('./validators/configuration');
-const deleteListedFiles = require('./prune-path-ops/paths-to-delete');
-const deleteUnlistedFiles = require('./prune-path-ops/paths-to-keep');
+const processPathsToDelete = require('./prune-path-ops/paths-to-delete');
+const processPathsToKeep = require('./prune-path-ops/paths-to-keep');
 
 class ServerlessPrunePath {
 
@@ -47,11 +47,11 @@ class ServerlessPrunePath {
 
       // Prune the files.
       if (customVariables.pathsToDelete?.all?.length) {
-        deleteListedFiles(customVariables.pathsToDelete.all, unzipDir, this.serverless);
+        processPathsToDelete(customVariables.pathsToDelete.all, unzipDir, this.serverless);
       }
 
       if (customVariables.pathsToKeep?.all?.length) {
-        deleteUnlistedFiles(customVariables.pathsToKeep.all, unzipDir, this.serverless);
+        processPathsToKeep(customVariables.pathsToKeep.all, unzipDir, this.serverless);
       }
 
       // Re-zip the package.

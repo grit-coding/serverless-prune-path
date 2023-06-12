@@ -1,7 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 
-function deleteUnlistedFiles(pathsToKeep, unzipDir, serverless) {
+function processPathsToKeep(pathsToKeep, unzipDir, serverless) {
     const keepFilesSet = new Set(pathsToKeep.map(filePath => path.join(unzipDir, filePath)));
 
     const invalidPath = [...keepFilesSet].find(path => {
@@ -49,4 +49,4 @@ function deleteUnlistedFiles(pathsToKeep, unzipDir, serverless) {
     });
 }
 
-module.exports = deleteUnlistedFiles;
+module.exports = processPathsToKeep;
