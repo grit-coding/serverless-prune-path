@@ -11,7 +11,7 @@
     "url": "https://github.com/grit-coding/serverless-prune-path"
   },
   "scripts": {
-    "unit-test": "jest unit --verbose",
+    "unit-test": "jest src --verbose",
     "integration-test": "jest integration --verbose",
     "coverage": "jest --coverage"
   },
